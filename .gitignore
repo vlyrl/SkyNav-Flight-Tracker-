@@ -1,0 +1,49 @@
+# ──────────────────────────────────────────────────────────
+# API Keys & Secrets — NEVER commit these
+# ──────────────────────────────────────────────────────────
+SkyNav/SkyNav/Resources/Config.plist
+
+# ──────────────────────────────────────────────────────────
+# Xcode
+# ──────────────────────────────────────────────────────────
+*.xcuserstate
+*.xcuserdata/
+xcuserdata/
+*.xcworkspace/xcuserdata/
+*.moved-aside
+*.pbxproj.bak
+*.xccheckout
+*.xcscmblueprint
+build/
+DerivedData/
+
+# ──────────────────────────────────────────────────────────
+# xcodegen — commit project.yml, not the generated .xcodeproj
+# ──────────────────────────────────────────────────────────
+*.xcodeproj/
+
+# ──────────────────────────────────────────────────────────
+# Swift Package Manager
+# ──────────────────────────────────────────────────────────
+.build/
+.swiftpm/
+Package.resolved
+
+# ──────────────────────────────────────────────────────────
+# macOS
+# ──────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+.DocumentRevisions-V100
+.fseventsd
+.TemporaryItems
+
+# ──────────────────────────────────────────────────────────
+# Claude Code workspace metadata
+# ──────────────────────────────────────────────────────────
+.claude/

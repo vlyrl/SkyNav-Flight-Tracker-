@@ -1,0 +1,20 @@
+# Normalize line endings: store as LF, check out as native
+* text=auto
+
+# Swift and Apple-format files always LF
+*.swift     text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.sh        text eol=lf
+*.json      text eol=lf
+*.plist     text eol=lf
+*.md        text eol=lf
+
+# Shell scripts must be LF so they execute on macOS
+setup.sh    text eol=lf
+
+# Binary assets — no line-ending conversion
+*.png       binary
+*.jpg       binary
+*.pdf       binary
+*.xcassets  binary
