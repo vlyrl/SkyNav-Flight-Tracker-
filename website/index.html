@@ -236,51 +236,27 @@
       position: relative;
       display: inline-flex;
       justify-content: center;
-    }
-    .phone-frame {
       width: 280px;
       height: 580px;
-      background: var(--surface);
-      border-radius: 44px;
-      border: 2px solid rgba(255,255,255,0.12);
-      position: relative;
-      overflow: hidden;
-      box-shadow:
-        0 0 0 1px rgba(255,255,255,0.04) inset,
-        0 40px 100px rgba(0,0,0,0.7),
-        0 0 60px rgba(74,158,255,0.1);
       animation: phone-float 4s ease-in-out infinite;
     }
     @keyframes phone-float {
       0%,100% { transform: translateY(0px); }
       50% { transform: translateY(-10px); }
     }
-    .phone-notch {
+    #hero-phone-canvas {
       position: absolute;
-      top: 14px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100px;
-      height: 30px;
-      background: #000;
-      border-radius: 20px;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
+      top: 0; left: 0;
+      width: 280px; height: 580px;
+      display: block;
     }
-    .phone-notch::after {
-      content: '';
-      width: 10px; height: 10px;
-      background: #1a1a2e;
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .phone-screen {
+    .phone-screen-html {
       position: absolute;
-      inset: 0;
-      padding: 60px 16px 20px;
+      top: 62px; left: 16px; right: 16px; bottom: 28px;
+      z-index: 2;
+      overflow: hidden;
+      border-radius: 32px;
+      pointer-events: none;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -596,23 +572,37 @@
       width: 200px;
       height: 420px;
       flex-shrink: 0;
-      background: var(--surface);
-      border-radius: 36px;
-      border: 2px solid rgba(255,255,255,0.1);
+      background: #07070c;
+      border-radius: 42px;
+      border: 7px solid #1a1a1e;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(74,158,255,0.05);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.18),
+        0 0 0 2px rgba(0,0,0,0.7),
+        /* right edge highlight */
+        2px 0 6px rgba(255,255,255,0.04) inset,
+        /* left shadow */
+        -2px 0 4px rgba(0,0,0,0.5) inset,
+        /* volume buttons left */
+        -9px 60px 0 -5px rgba(80,80,90,0.9),
+        -9px 90px 0 -5px rgba(80,80,90,0.9),
+        /* power button right */
+        9px 70px 0 -5px rgba(80,80,90,0.9),
+        0 30px 80px rgba(0,0,0,0.85),
+        0 0 50px rgba(74,158,255,0.07);
     }
     .mock-phone-notch {
       position: absolute;
       top: 10px;
       left: 50%;
       transform: translateX(-50%);
-      width: 70px;
-      height: 22px;
+      width: 58px;
+      height: 17px;
       background: #000;
-      border-radius: 15px;
+      border-radius: 12px;
       z-index: 5;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06);
     }
     .mock-screen {
       position: absolute;
@@ -1552,17 +1542,16 @@
 
       <!-- Phone Mockup -->
       <div class="phone-wrapper reveal reveal-delay-4">
-        <div class="phone-frame">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="phone-status-bar">
-              <span>9:41</span>
-              <div class="phone-status-icons">
-                <span class="status-icon" style="font-size:0.55rem;letter-spacing:-1px">▐▐▐▐</span>
-                <span class="status-icon" style="font-size:0.6rem">WiFi</span>
-                <span class="status-icon">🔋</span>
-              </div>
+        <canvas id="hero-phone-canvas"></canvas>
+        <div class="phone-screen-html">
+          <div class="phone-status-bar">
+            <span>9:41</span>
+            <div class="phone-status-icons">
+              <span class="status-icon" style="font-size:0.55rem;letter-spacing:-1px">▐▐▐▐</span>
+              <span class="status-icon" style="font-size:0.6rem">WiFi</span>
+              <span class="status-icon">🔋</span>
             </div>
+          </div>
 
             <!-- Screen title -->
             <div class="ps-title-row">
@@ -1669,7 +1658,6 @@
           </div>
         </div>
       </div>
-    </div>
   </section>
 
   <div class="section-divider"></div>
@@ -2446,6 +2434,14 @@
       }
     }
   </script>
-</body>
-</html>
-                                                                                                                                                                                                                                                                   
+
+  <!-- Three.js + GLTFLoader for 3D iPhone -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script>
+    (function () {
+      const canvas = document.getElementById('hero-phone-canvas');
+      if (!canvas) return;
+
+      const W = 280, H = 580;
+      const renderer = new THREE.WebGLR
