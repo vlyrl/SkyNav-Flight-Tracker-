@@ -742,12 +742,9 @@
     .island-airline-dot {
       width: 28px; height: 28px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #003d7a, #005cbf);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.55rem;
-      font-weight: 800;
+      object-fit: contain;
+      background: #fff;
+      padding: 3px;
       flex-shrink: 0;
     }
     .island-content { flex: 1; }
@@ -1214,14 +1211,9 @@
     .bp-logo {
       width: 18px; height: 18px;
       border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.42rem;
-      font-weight: 800;
-      color: #fff;
+      object-fit: contain;
+      background: #fff;
       flex-shrink: 0;
-      letter-spacing: 0;
     }
     .bp-airline-name {
       font-size: 0.5rem;
@@ -1317,12 +1309,8 @@
     .bpsm-logo {
       width: 28px; height: 28px;
       border-radius: 7px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.5rem;
-      font-weight: 800;
-      color: #fff;
+      object-fit: contain;
+      background: #fff;
       flex-shrink: 0;
     }
     .bpsm-content { flex: 1; }
@@ -1395,8 +1383,9 @@
     .mbp-logo {
       width: 14px; height: 14px;
       border-radius: 3px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.35rem; font-weight: 800; color: #fff; flex-shrink: 0;
+      object-fit: contain;
+      background: #fff;
+      flex-shrink: 0;
     }
     .mbp-airline-name { font-size: 0.4rem; color: var(--text-secondary); font-weight: 600; line-height: 1; }
     .mbp-flight-num { font-size: 0.48rem; font-weight: 800; color: var(--text-primary); }
@@ -1585,7 +1574,7 @@
             <div class="bp-card bp-active">
               <div class="bp-airline-row">
                 <div class="bp-logo-wrap">
-                  <div class="bp-logo" style="background:#1E5ECC">UA</div>
+                  <img class="bp-logo" src="https://www.gstatic.com/flights/airline_logos/70px/UA.png" alt="United Airlines">
                   <div>
                     <div class="bp-airline-name">United Airlines</div>
                     <div class="bp-flight-num">UA 2241</div>
@@ -1632,7 +1621,7 @@
 
             <!-- Scheduled card 1 -->
             <div class="bp-card-sm">
-              <div class="bpsm-logo" style="background:#D6001C">DL</div>
+              <img class="bpsm-logo" src="https://www.gstatic.com/flights/airline_logos/70px/DL.png" alt="Delta">
               <div class="bpsm-content">
                 <div class="bpsm-route">
                   <span>LAX</span>
@@ -1646,7 +1635,7 @@
 
             <!-- Scheduled card 2 -->
             <div class="bp-card-sm">
-              <div class="bpsm-logo" style="background:#C41E3A">AA</div>
+              <img class="bpsm-logo" src="https://www.gstatic.com/flights/airline_logos/70px/AA.png" alt="American Airlines">
               <div class="bpsm-content">
                 <div class="bpsm-route">
                   <span>ORD</span>
@@ -1755,7 +1744,7 @@
             <div class="mbp-card mbp-active">
               <div class="mbp-airline-row">
                 <div class="mbp-logo-wrap">
-                  <div class="mbp-logo" style="background:#1E5ECC">UA</div>
+                  <img class="mbp-logo" src="https://www.gstatic.com/flights/airline_logos/70px/UA.png" alt="UA">
                   <div>
                     <div class="mbp-airline-name">United Airlines</div>
                     <div class="mbp-flight-num">UA 2241</div>
@@ -1885,7 +1874,7 @@
             <div style="text-align:center;font-size:1.9rem;font-weight:300;letter-spacing:-0.05em;line-height:1;margin-bottom:8px">9:41</div>
             <!-- Dynamic Island expanded -->
             <div class="mock-island">
-              <div class="island-airline-dot">UA</div>
+              <img class="island-airline-dot" src="https://www.gstatic.com/flights/airline_logos/70px/UA.png" alt="UA">
               <div class="island-content">
                 <div class="island-flight-num">UA 2241 &nbsp;JFK → LAX</div>
                 <div class="island-route" style="display:flex;align-items:center;gap:3px">
@@ -1934,7 +1923,7 @@
             <div class="mbp-card mbp-active">
               <div class="mbp-airline-row">
                 <div class="mbp-logo-wrap">
-                  <div class="mbp-logo" style="background:#1E5ECC">UA</div>
+                  <img class="mbp-logo" src="https://www.gstatic.com/flights/airline_logos/70px/UA.png" alt="UA">
                   <div><div class="mbp-flight-num">UA 2241</div></div>
                 </div>
                 <div class="mbp-pill mbp-inflight">IN FLIGHT</div>
@@ -1958,7 +1947,7 @@
             <div class="mbp-card">
               <div class="mbp-airline-row">
                 <div class="mbp-logo-wrap">
-                  <div class="mbp-logo" style="background:#D6001C">DL</div>
+                  <img class="mbp-logo" src="https://www.gstatic.com/flights/airline_logos/70px/DL.png" alt="DL">
                   <div><div class="mbp-flight-num">DL 892</div></div>
                 </div>
                 <div class="mbp-pill mbp-scheduled">SCHEDULED</div>
@@ -2041,7 +2030,7 @@
             <div class="mbp-card mbp-active">
               <div class="mbp-airline-row">
                 <div class="mbp-logo-wrap">
-                  <div class="mbp-logo" style="background:#1E5ECC">UA</div>
+                  <img class="mbp-logo" src="https://www.gstatic.com/flights/airline_logos/70px/UA.png" alt="UA">
                   <div>
                     <div class="mbp-airline-name">United Airlines</div>
                     <div class="mbp-flight-num">UA 2241</div>
@@ -2155,7 +2144,7 @@
             <div style="text-align:center;font-size:0.48rem;color:var(--text-secondary);font-weight:600;margin-bottom:2px">Tuesday, June 17</div>
             <div style="text-align:center;font-size:1.9rem;font-weight:300;letter-spacing:-0.05em;line-height:1;margin-bottom:8px">9:41</div>
             <div class="mock-island">
-              <div class="island-airline-dot">UA</div>
+              <img class="island-airline-dot" src="https://www.gstatic.com/flights/airline_logos/70px/UA.png" alt="UA">
               <div class="island-content">
                 <div class="island-flight-num">UA 2241 &nbsp;JFK → LAX</div>
                 <div class="island-route" style="display:flex;align-items:center;gap:3px">
@@ -2201,7 +2190,7 @@
             <div class="mbp-card mbp-active">
               <div class="mbp-airline-row">
                 <div class="mbp-logo-wrap">
-                  <div class="mbp-logo" style="background:#1E5ECC">UA</div>
+                  <img class="mbp-logo" src="https://www.gstatic.com/flights/airline_logos/70px/UA.png" alt="UA">
                   <div><div class="mbp-flight-num">UA 2241</div></div>
                 </div>
                 <div class="mbp-pill mbp-inflight">IN FLIGHT</div>
@@ -2223,7 +2212,7 @@
             <div class="mbp-card">
               <div class="mbp-airline-row">
                 <div class="mbp-logo-wrap">
-                  <div class="mbp-logo" style="background:#D6001C">DL</div>
+                  <img class="mbp-logo" src="https://www.gstatic.com/flights/airline_logos/70px/DL.png" alt="DL">
                   <div><div class="mbp-flight-num">DL 892</div></div>
                 </div>
                 <div class="mbp-pill mbp-scheduled">SCHEDULED</div>
@@ -2459,3 +2448,4 @@
   </script>
 </body>
 </html>
+                                                                                                                                                                                                                                                                   
