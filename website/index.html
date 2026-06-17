@@ -236,54 +236,33 @@
       position: relative;
       display: inline-flex;
       justify-content: center;
-    }
-    .phone-frame {
       width: 280px;
       height: 580px;
-      background: var(--surface);
-      border-radius: 44px;
-      border: 2px solid rgba(255,255,255,0.12);
-      position: relative;
-      overflow: hidden;
-      box-shadow:
-        0 0 0 1px rgba(255,255,255,0.04) inset,
-        0 40px 100px rgba(0,0,0,0.7),
-        0 0 60px rgba(74,158,255,0.1);
       animation: phone-float 4s ease-in-out infinite;
+      transform-style: preserve-3d;
     }
     @keyframes phone-float {
       0%,100% { transform: translateY(0px); }
       50% { transform: translateY(-10px); }
     }
-    .phone-notch {
+    #hero-phone-canvas {
       position: absolute;
-      top: 14px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100px;
-      height: 30px;
-      background: #000;
-      border-radius: 20px;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-    .phone-notch::after {
-      content: '';
-      width: 10px; height: 10px;
-      background: #1a1a2e;
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.1);
+      top: 0; left: 0;
+      width: 280px; height: 580px;
+      display: block;
+      pointer-events: none;
     }
     .phone-screen {
       position: absolute;
-      inset: 0;
-      padding: 60px 16px 20px;
+      top: 62px; left: 16px; right: 16px; bottom: 28px;
+      z-index: 2;
+      overflow: hidden;
+      border-radius: 32px;
+      pointer-events: none;
       display: flex;
       flex-direction: column;
       gap: 12px;
+      padding: 0;
     }
     .phone-status-bar {
       display: flex;
@@ -1552,17 +1531,16 @@
 
       <!-- Phone Mockup -->
       <div class="phone-wrapper reveal reveal-delay-4">
-        <div class="phone-frame">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="phone-status-bar">
-              <span>9:41</span>
-              <div class="phone-status-icons">
-                <span class="status-icon" style="font-size:0.55rem;letter-spacing:-1px">▐▐▐▐</span>
-                <span class="status-icon" style="font-size:0.6rem">WiFi</span>
-                <span class="status-icon">🔋</span>
-              </div>
+        <canvas id="hero-phone-canvas"></canvas>
+        <div class="phone-screen">
+          <div class="phone-status-bar">
+            <span>9:41</span>
+            <div class="phone-status-icons">
+              <span class="status-icon" style="font-size:0.55rem;letter-spacing:-1px">▐▐▐▐</span>
+              <span class="status-icon" style="font-size:0.6rem">WiFi</span>
+              <span class="status-icon">🔋</span>
             </div>
+          </div>
 
             <!-- Screen title -->
             <div class="ps-title-row">
@@ -1574,7 +1552,7 @@
             <div class="bp-card bp-active">
               <div class="bp-airline-row">
                 <div class="bp-logo-wrap">
-                  <img class="bp-logo" src="https://www.gstatic.com/flights/airline_logos/70px/UA.png" alt="United Airlines">
+                  <img class="bp-logo" src="https://pics.avs.io/200/200/UA.png" alt="United Airlines">
                   <div>
                     <div class="bp-airline-name">United Airlines</div>
                     <div class="bp-flight-num">UA 2241</div>
@@ -1621,7 +1599,7 @@
 
             <!-- Scheduled card 1 -->
             <div class="bp-card-sm">
-              <img class="bpsm-logo" src="https://www.gstatic.com/flights/airline_logos/70px/DL.png" alt="Delta">
+              <img class="bpsm-logo" src="https://pics.avs.io/200/200/DL.png" alt="Delta">
               <div class="bpsm-content">
                 <div class="bpsm-route">
                   <span>LAX</span>
@@ -1635,7 +1613,7 @@
 
             <!-- Scheduled card 2 -->
             <div class="bp-card-sm">
-              <img class="bpsm-logo" src="https://www.gstatic.com/flights/airline_logos/70px/AA.png" alt="American Airlines">
+              <img class="bpsm-logo" src="https://pics.avs.io/200/200/AA.png" alt="American Airlines">
               <div class="bpsm-content">
                 <div class="bpsm-route">
                   <span>ORD</span>
@@ -1669,7 +1647,6 @@
           </div>
         </div>
       </div>
-    </div>
   </section>
 
   <div class="section-divider"></div>
@@ -1744,7 +1721,7 @@
             <div class="mbp-card mbp-active">
               <div class="mbp-airline-row">
                 <div class="mbp-logo-wrap">
-                  <img class="mbp-logo" src="https://www.gstatic.com/flights/airline_logos/70px/UA.png" alt="UA">
+                  <img class="mbp-logo" src="https://pics.avs.io/200/200/UA.png" alt="UA">
                   <div>
                     <div class="mbp-airline-name">United Airlines</div>
                     <div class="mbp-flight-num">UA 2241</div>
@@ -1779,12 +1756,12 @@
             </div>
             <!-- Scheduled -->
             <div class="mbp-card" style="display:flex;align-items:center;gap:6px;padding:6px 8px;">
-              <div style="width:20px;height:20px;border-radius:5px;background:#D6001C;display:flex;align-items:center;justify-content:center;font-size:0.35rem;font-weight:800;color:#fff;flex-shrink:0">DL</div>
+              <img style="width:20px;height:20px;border-radius:5px;object-fit:contain;flex-shrink:0" src="https://pics.avs.io/200/200/DL.png" alt="DL">
               <div style="flex:1"><div style="font-size:0.52rem;font-weight:800">LAX → ORD</div><div style="font-size:0.36rem;color:var(--text-secondary)">DL 1829 · 14:45</div></div>
               <div class="mbp-pill mbp-ontime">ON TIME</div>
             </div>
             <div class="mbp-card" style="display:flex;align-items:center;gap:6px;padding:6px 8px;">
-              <div style="width:20px;height:20px;border-radius:5px;background:#C41E3A;display:flex;align-items:center;justify-content:center;font-size:0.35rem;font-weight:800;color:#fff;flex-shrink:0">AA</div>
+              <img style="width:20px;height:20px;border-radius:5px;object-fit:contain;flex-shrink:0" src="https://pics.avs.io/200/200/AA.png" alt="AA">
               <div style="flex:1"><div style="font-size:0.52rem;font-weight:800">ORD → LHR</div><div style="font-size:0.36rem;color:var(--text-secondary)">AA 445 · 21:30</div></div>
               <div class="mbp-pill mbp-scheduled">SCHEDULED</div>
             </div>
@@ -1874,7 +1851,7 @@
             <div style="text-align:center;font-size:1.9rem;font-weight:300;letter-spacing:-0.05em;line-height:1;margin-bottom:8px">9:41</div>
             <!-- Dynamic Island expanded -->
             <div class="mock-island">
-              <img class="island-airline-dot" src="https://www.gstatic.com/flights/airline_logos/70px/UA.png" alt="UA">
+              <img class="island-airline-dot" src="https://pics.avs.io/200/200/UA.png" alt="UA">
               <div class="island-content">
                 <div class="island-flight-num">UA 2241 &nbsp;JFK → LAX</div>
                 <div class="island-route" style="display:flex;align-items:center;gap:3px">
@@ -1923,7 +1900,7 @@
             <div class="mbp-card mbp-active">
               <div class="mbp-airline-row">
                 <div class="mbp-logo-wrap">
-                  <img class="mbp-logo" src="https://www.gstatic.com/flights/airline_logos/70px/UA.png" alt="UA">
+                  <img class="mbp-logo" src="https://pics.avs.io/200/200/UA.png" alt="UA">
                   <div><div class="mbp-flight-num">UA 2241</div></div>
                 </div>
                 <div class="mbp-pill mbp-inflight">IN FLIGHT</div>
@@ -1947,7 +1924,7 @@
             <div class="mbp-card">
               <div class="mbp-airline-row">
                 <div class="mbp-logo-wrap">
-                  <img class="mbp-logo" src="https://www.gstatic.com/flights/airline_logos/70px/DL.png" alt="DL">
+                  <img class="mbp-logo" src="https://pics.avs.io/200/200/DL.png" alt="DL">
                   <div><div class="mbp-flight-num">DL 892</div></div>
                 </div>
                 <div class="mbp-pill mbp-scheduled">SCHEDULED</div>
@@ -2030,7 +2007,7 @@
             <div class="mbp-card mbp-active">
               <div class="mbp-airline-row">
                 <div class="mbp-logo-wrap">
-                  <img class="mbp-logo" src="https://www.gstatic.com/flights/airline_logos/70px/UA.png" alt="UA">
+                  <img class="mbp-logo" src="https://pics.avs.io/200/200/UA.png" alt="UA">
                   <div>
                     <div class="mbp-airline-name">United Airlines</div>
                     <div class="mbp-flight-num">UA 2241</div>
@@ -2064,12 +2041,12 @@
               <div class="mbp-progress-track"><div class="mbp-progress-fill" style="width:68%"></div></div>
             </div>
             <div class="mbp-card" style="display:flex;align-items:center;gap:6px;padding:6px 8px;">
-              <div style="width:20px;height:20px;border-radius:5px;background:#D6001C;display:flex;align-items:center;justify-content:center;font-size:0.35rem;font-weight:800;color:#fff;flex-shrink:0">DL</div>
+              <img style="width:20px;height:20px;border-radius:5px;object-fit:contain;flex-shrink:0" src="https://pics.avs.io/200/200/DL.png" alt="DL">
               <div style="flex:1"><div style="font-size:0.52rem;font-weight:800">LAX → ORD</div><div style="font-size:0.36rem;color:var(--text-secondary)">DL 1829 · 14:45</div></div>
               <div class="mbp-pill mbp-ontime">ON TIME</div>
             </div>
             <div class="mbp-card" style="display:flex;align-items:center;gap:6px;padding:6px 8px;">
-              <div style="width:20px;height:20px;border-radius:5px;background:#C41E3A;display:flex;align-items:center;justify-content:center;font-size:0.35rem;font-weight:800;color:#fff;flex-shrink:0">AA</div>
+              <img style="width:20px;height:20px;border-radius:5px;object-fit:contain;flex-shrink:0" src="https://pics.avs.io/200/200/AA.png" alt="AA">
               <div style="flex:1"><div style="font-size:0.52rem;font-weight:800">ORD → LHR</div><div style="font-size:0.36rem;color:var(--text-secondary)">AA 445 · 21:30</div></div>
               <div class="mbp-pill mbp-scheduled">SCHEDULED</div>
             </div>
@@ -2144,7 +2121,7 @@
             <div style="text-align:center;font-size:0.48rem;color:var(--text-secondary);font-weight:600;margin-bottom:2px">Tuesday, June 17</div>
             <div style="text-align:center;font-size:1.9rem;font-weight:300;letter-spacing:-0.05em;line-height:1;margin-bottom:8px">9:41</div>
             <div class="mock-island">
-              <img class="island-airline-dot" src="https://www.gstatic.com/flights/airline_logos/70px/UA.png" alt="UA">
+              <img class="island-airline-dot" src="https://pics.avs.io/200/200/UA.png" alt="UA">
               <div class="island-content">
                 <div class="island-flight-num">UA 2241 &nbsp;JFK → LAX</div>
                 <div class="island-route" style="display:flex;align-items:center;gap:3px">
@@ -2190,7 +2167,7 @@
             <div class="mbp-card mbp-active">
               <div class="mbp-airline-row">
                 <div class="mbp-logo-wrap">
-                  <img class="mbp-logo" src="https://www.gstatic.com/flights/airline_logos/70px/UA.png" alt="UA">
+                  <img class="mbp-logo" src="https://pics.avs.io/200/200/UA.png" alt="UA">
                   <div><div class="mbp-flight-num">UA 2241</div></div>
                 </div>
                 <div class="mbp-pill mbp-inflight">IN FLIGHT</div>
@@ -2212,7 +2189,7 @@
             <div class="mbp-card">
               <div class="mbp-airline-row">
                 <div class="mbp-logo-wrap">
-                  <img class="mbp-logo" src="https://www.gstatic.com/flights/airline_logos/70px/DL.png" alt="DL">
+                  <img class="mbp-logo" src="https://pics.avs.io/200/200/DL.png" alt="DL">
                   <div><div class="mbp-flight-num">DL 892</div></div>
                 </div>
                 <div class="mbp-pill mbp-scheduled">SCHEDULED</div>
@@ -2445,6 +2422,77 @@
         container.appendChild(p);
       }
     }
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script>
+  (function () {
+    const canvas = document.getElementById('hero-phone-canvas');
+    if (!canvas) return;
+
+    const W = 280, H = 580;
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setSize(W, H);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.physicallyCorrectLights = true;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(28, W / H, 0.01, 100);
+    camera.position.set(0, 0, 6);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const key = new THREE.DirectionalLight(0xffffff, 2.2);
+    key.position.set(2, 4, 5); scene.add(key);
+    const fill = new THREE.DirectionalLight(0x88bbff, 0.7);
+    fill.position.set(-3, 1, 2); scene.add(fill);
+    const rim = new THREE.DirectionalLight(0x4a9eff, 0.4);
+    rim.position.set(0, -3, -2); scene.add(rim);
+
+    let phone = null;
+    // Base tilt (slight angle to show depth)
+    const BASE_Y = 0.18, BASE_X = -0.05;
+    // Current & target rotation offsets from mouse
+    let curX = 0, curY = 0, tgtX = 0, tgtY = 0;
+
+    const loader = new THREE.GLTFLoader();
+    loader.load('../3d%20objects/iphone/scene.gltf', function (gltf) {
+      phone = gltf.scene;
+      const box = new THREE.Box3().setFromObject(phone);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      phone.position.sub(center);
+      phone.scale.setScalar(3.2 / Math.max(size.x, size.y, size.z));
+      phone.rotation.y = BASE_Y;
+      phone.rotation.x = BASE_X;
+      scene.add(phone);
+    }, undefined, function (e) { console.warn('GLTF:', e); });
+
+    // Mouse tracking — subtle, max ±8°
+    const MAX = 0.14;
+    document.addEventListener('mousemove', function (e) {
+      tgtX = ((e.clientY / window.innerHeight) - 0.5) * -MAX * 2;
+      tgtY = ((e.clientX / window.innerWidth)  - 0.5) *  MAX * 2;
+    });
+    document.addEventListener('mouseleave', function () { tgtX = 0; tgtY = 0; });
+
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      // Smooth lerp toward target
+      curX += (tgtX - curX) * 0.06;
+      curY += (tgtY - curY) * 0.06;
+      if (phone) {
+        phone.rotation.x = BASE_X + curX;
+        phone.rotation.y = BASE_Y + curY;
+        // Float
+        phone.position.y = Math.sin(clock.getElapsedTime() * 0.8) * 0.06;
+      }
+      renderer.render(scene, camera);
+    }
+    animate();
+  })();
   </script>
 </body>
 </html>
