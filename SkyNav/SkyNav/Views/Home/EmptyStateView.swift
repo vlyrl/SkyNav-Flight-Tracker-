@@ -9,27 +9,31 @@ struct EmptyStateView: View {
         VStack(spacing: 24) {
             Spacer()
 
-            Image(systemName: "airplane.circle")
-                .font(.system(size: 80, weight: .thin))
-                .foregroundStyle(SkyNavColor.accent.opacity(0.6))
-                .shadow(color: SkyNavColor.accent.opacity(0.25), radius: 16)
-                .offset(y: bobbing ? -8 : 0)
-                .animation(
-                    .easeInOut(duration: 2.0)
-                    .repeatForever(autoreverses: true),
-                    value: bobbing
-                )
+            VStack(spacing: 16) {
+                Image(systemName: "airplane.circle")
+                    .font(.system(size: 80, weight: .thin))
+                    .foregroundStyle(SkyNavColor.accent.opacity(0.6))
+                    .shadow(color: SkyNavColor.accent.opacity(0.25), radius: 16)
+                    .offset(y: bobbing ? -8 : 0)
+                    .animation(
+                        .easeInOut(duration: 2.0)
+                        .repeatForever(autoreverses: true),
+                        value: bobbing
+                    )
 
-            VStack(spacing: 8) {
-                Text("No Flights Yet")
-                    .font(.skyNavTitle)
-                    .foregroundStyle(SkyNavColor.textPrimary)
+                VStack(spacing: 8) {
+                    Text("No Flights Yet")
+                        .font(.skyNavTitle)
+                        .foregroundStyle(SkyNavColor.textPrimary)
 
-                Text("Add your first flight to get started")
-                    .font(.skyNavBody)
-                    .foregroundStyle(SkyNavColor.textSecondary)
-                    .multilineTextAlignment(.center)
+                    Text("Add your first flight to get started")
+                        .font(.skyNavBody)
+                        .foregroundStyle(SkyNavColor.textSecondary)
+                        .multilineTextAlignment(.center)
+                }
             }
+            .padding(32)
+            .modifier(EmptyStateCardModifier())
 
             Button(action: {
                 SkyNavHaptic.medium()
@@ -55,6 +59,25 @@ struct EmptyStateView: View {
         .frame(maxWidth: .infinity)
         .onAppear {
             bobbing = true
+        }
+    }
+}
+
+// MARK: - iOS 26 Glass Modifier
+
+private struct EmptyStateCardModifier: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+                .glassEffect(.regular, in: .rect(cornerRadius: 24))
+        } else {
+            content
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                )
         }
     }
 }

@@ -35,36 +35,73 @@ struct SkyNavApp: App {
 struct ContentView: View {
     @Environment(HomeViewModel.self) private var homeVM
     @Environment(SubscriptionViewModel.self) private var subVM
+
+    // Default order: Explore(0) → Flights(1) → Trips(2) → Settings(3)
+    // When an active flight is detected, auto-switch to Flights (tag 1).
     @State private var selectedTab = 0
 
+    private var hasActiveFlight: Bool {
+        homeVM.activeFlight != nil
+    }
+
     var body: some View {
-        TabView(selection: $selectedTab) {
-            HomeView(viewModel: homeVM)
-                .tabItem {
-                    Label("Flights", systemImage: "airplane")
+        tabContent
+            .tint(SkyNavColor.accent)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .onAppear {
+                if #available(iOS 26, *) {
+                    // iOS 26: system provides glass tab bar automatically
+                } else {
+                    configureTabBarAppearance()
                 }
-                .tag(0)
+                if hasActiveFlight {
+                    selectedTab = 1
+                }
+            }
+            .onChange(of: hasActiveFlight) { _, isActive in
+                if isActive {
+                    withAnimation {
+                        selectedTab = 1
+                    }
+                }
+            }
+    }
 
-            TripRootView()
-                .tabItem {
-                    Label("Trips", systemImage: "suitcase")
-                }
-                .tag(1)
-
-            ExploreView()
-                .tabItem {
-                    Label("Explore", systemImage: "building.2")
-                }
-                .tag(2)
-
-            SettingsView()
-                .tabItem {
-                    Label("Settings", systemImage: "gear")
-                }
-                .tag(3)
+    @ViewBuilder
+    private var tabContent: some View {
+        if #available(iOS 26, *) {
+            TabView(selection: $selectedTab) {
+                ExploreView()
+                    .tabItem { Label("Explore", systemImage: "building.2") }
+                    .tag(0)
+                HomeView(viewModel: homeVM)
+                    .tabItem { Label("Flights", systemImage: "airplane") }
+                    .tag(1)
+                TripRootView()
+                    .tabItem { Label("Trips", systemImage: "suitcase") }
+                    .tag(2)
+                SettingsView()
+                    .tabItem { Label("Settings", systemImage: "gear") }
+                    .tag(3)
+            }
+            .tabBarMinimizeBehavior(.onScrollDown)
+            .toolbarBackground(.hidden, for: .tabBar)
+        } else {
+            TabView(selection: $selectedTab) {
+                ExploreView()
+                    .tabItem { Label("Explore", systemImage: "building.2") }
+                    .tag(0)
+                HomeView(viewModel: homeVM)
+                    .tabItem { Label("Flights", systemImage: "airplane") }
+                    .tag(1)
+                TripRootView()
+                    .tabItem { Label("Trips", systemImage: "suitcase") }
+                    .tag(2)
+                SettingsView()
+                    .tabItem { Label("Settings", systemImage: "gear") }
+                    .tag(3)
+            }
         }
-        .tint(SkyNavColor.accent)
-        .onAppear { configureTabBarAppearance() }
     }
 
     private func configureTabBarAppearance() {
@@ -158,6 +195,7 @@ struct SettingsView: View {
     @State private var showPaywall = false
     @State private var timeToLeaveMinutes = 120
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
+    @AppStorage("syncToCalendar") private var syncToCalendar = false
 
     var body: some View {
         NavigationStack {
@@ -194,6 +232,24 @@ struct SettingsView: View {
 
                 Section("Notifications") {
                     Toggle("Push Notifications", isOn: $notificationsEnabled)
+                    Toggle(isOn: $syncToCalendar) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "calendar.badge.plus")
+                                .foregroundStyle(SkyNavColor.accent)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Sync to Calendar")
+                                    .font(.skyNavBody)
+                                Text("Add flights to a \"SkyNav Flights\" calendar")
+                                    .font(.skyNavCaption)
+                                    .foregroundStyle(SkyNavColor.textSecondary)
+                            }
+                        }
+                    }
+                    .onChange(of: syncToCalendar) { _, enabled in
+                        if enabled {
+                            Task { await CalendarSyncService.shared.requestAccess() }
+                        }
+                    }
                     HStack {
                         Text("Time to Leave Reminder")
                         Spacer()

@@ -100,16 +100,22 @@ final class HomeViewModel {
         }
         startPolling(for: flight)
         WidgetDataBridge.shared.write(flights: flights)
+        if calendarSyncEnabled { CalendarSyncService.shared.syncFlight(flight) }
         SkyNavHaptic.success()
     }
 
     func deleteFlight(_ flight: Flight) {
         pollingService.stopPolling(flightId: flight.id)
         notificationService.cancelAll(for: flight.id)
+        CalendarSyncService.shared.removeFlight(flight)
         persistence.delete(flight)
         flights.removeAll { $0.id == flight.id }
         WidgetDataBridge.shared.write(flights: flights)
         SkyNavHaptic.medium()
+    }
+
+    private var calendarSyncEnabled: Bool {
+        UserDefaults.standard.bool(forKey: "syncToCalendar")
     }
 
     // MARK: - Polling
@@ -152,6 +158,7 @@ final class HomeViewModel {
         flight.baggageClaim        = update.baggageClaim
         if let pos = update.livePosition { flight.updateLivePosition(pos) }
         persistence.save()
+        if calendarSyncEnabled { CalendarSyncService.shared.syncFlight(flight) }
 
         guard flight.notificationsEnabled else { return }
         if update.status == .cancelled && oldStatus != .cancelled {

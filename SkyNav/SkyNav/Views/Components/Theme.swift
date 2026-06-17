@@ -16,9 +16,11 @@ enum SkyNavColor {
 
     // Status colors
     static let statusOnTime    = Color(hex: "#34C759")
-    static let statusDelayed   = Color(hex: "#FF9F0A")
+    static let statusDelayed   = Color(hex: "#FFFFFF")           // white text — pair with statusDelayedBadge bg
+    static let statusDelayedBadge = Color(hex: "#2C2C2E")       // charcoal badge background for delayed
     static let statusCancelled = Color(hex: "#FF453A")
-    static let statusBoarding  = Color(hex: "#30D158")
+    static let statusBoarding  = Color(hex: "#4A9EFF")          // same blue family as accent
+    static let statusWarning   = Color(hex: "#FF453A")          // red — serious delays >60 min
     static let statusInFlight  = Color(hex: "#64D2FF")
     static let statusLanded    = Color(hex: "#8E8E93")
 
@@ -30,9 +32,14 @@ enum SkyNavColor {
     // Premium
     static let gold           = Color(hex: "#FFD60A")
     static let goldGradient   = LinearGradient(
-        colors: [Color(hex: "#FFD60A"), Color(hex: "#FF9F0A")],
+        colors: [Color(hex: "#FFD60A"), Color(hex: "#FFAA00")],
         startPoint: .leading, endPoint: .trailing
     )
+
+    // iOS 26 Glass
+    static let glassOpacity: Double = 0.85
+    static let glassBorderOpacity: Double = 0.25
+    static let glassBlurRadius: CGFloat = 20
 }
 
 enum SkyNavGradient {
@@ -70,7 +77,7 @@ extension FlightStatus {
         case .landed:     return SkyNavColor.statusLanded
         case .arrived:    return SkyNavColor.statusLanded
         case .cancelled:  return SkyNavColor.statusCancelled
-        case .diverted:   return SkyNavColor.statusDelayed
+        case .diverted:   return SkyNavColor.statusWarning
         }
     }
 
@@ -119,15 +126,20 @@ struct CardStyle: ViewModifier {
     }
 }
 
-struct GlassCard: ViewModifier {
+struct GlassCardModifier: ViewModifier {
+    @ViewBuilder
     func body(content: Content) -> some View {
-        content
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(.white.opacity(0.08), lineWidth: 0.5)
-            )
+        if #available(iOS 26, *) {
+            content
+                .glassEffect(.regular.tinted(SkyNavColor.surface.opacity(0.4)), in: .rect(cornerRadius: 20))
+        } else {
+            content
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+                )
+        }
     }
 }
 
@@ -136,8 +148,13 @@ extension View {
         modifier(CardStyle(gradient: gradient, cornerRadius: cornerRadius))
     }
 
+    func skyNavGlassCard() -> some View {
+        modifier(GlassCardModifier())
+    }
+
+    /// Legacy alias — prefer skyNavGlassCard() in new code.
     func glassCard() -> some View {
-        modifier(GlassCard())
+        modifier(GlassCardModifier())
     }
 }
 

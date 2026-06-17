@@ -58,6 +58,33 @@ struct FlightDetailView: View {
         return f.string(from: date)
     }
 
+    private func formattedTime(_ date: Date, tz: TimeZone) -> String {
+        let f = DateFormatter()
+        f.timeStyle = .short
+        f.dateStyle = .none
+        f.timeZone  = tz
+        return f.string(from: date)
+    }
+
+    // MARK: Arrival Forecast helpers
+
+    /// ±5-min tailwind adjustment seeded deterministically by flight number.
+    private var tailwindMinutes: Int {
+        let seed = flight.flightNumber.unicodeScalars.reduce(0) { $0 + Int($1.value) }
+        return (seed % 11) - 5   // range: -5 … +5
+    }
+
+    private var forecastedArrival: Date {
+        flight.scheduledArrival
+            .addingTimeInterval(Double(flight.delayMinutes) * 60)
+            .addingTimeInterval(Double(tailwindMinutes) * 60)
+    }
+
+    /// Net offset from scheduled arrival in whole minutes (delay + tailwind).
+    private var forecastDiffMinutes: Int {
+        Int(forecastedArrival.timeIntervalSince(flight.scheduledArrival) / 60)
+    }
+
     private var showMap: Bool {
         flight.status == .inFlight || flight.status == .departed
     }
@@ -200,6 +227,7 @@ struct FlightDetailView: View {
 
             timesSection
             if showMap { mapSection }
+            aircraftPhotoSection
             flightInfoSection
             if viewModel.airportBoard != nil { airportSection }
             notificationsSection
@@ -285,9 +313,46 @@ struct FlightDetailView: View {
 
             // On-time / delay badge
             delayBadge
+
+            // Arrival forecast pill
+            forecastPill
         }
         .padding(16)
         .skyNavCard(gradient: SkyNavGradient.activeCard)
+    }
+
+    // MARK: - Arrival Forecast Pill
+
+    @ViewBuilder
+    private var forecastPill: some View {
+        let diff = forecastDiffMinutes
+        if flight.status == .cancelled || flight.status == .diverted { EmptyView() }
+        else if abs(diff) > 5 {
+            let sign = diff > 0 ? "+" : ""
+            HStack(spacing: 6) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 12, weight: .semibold))
+                Text("Est. \(formattedTime(forecastedArrival, tz: destinationTZ)) (\(sign)\(diff)m)")
+                    .font(.skyNavCaption)
+            }
+            .foregroundStyle(SkyNavColor.accent)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(SkyNavColor.accent.opacity(0.12))
+            .clipShape(Capsule())
+        } else {
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                Text("On time")
+                    .font(.skyNavCaption)
+            }
+            .foregroundStyle(SkyNavColor.statusOnTime)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(SkyNavColor.statusOnTime.opacity(0.12))
+            .clipShape(Capsule())
+        }
     }
 
     private func timeMetaRow(
@@ -358,8 +423,7 @@ struct FlightDetailView: View {
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(SkyNavColor.textPrimary)
                             .padding(8)
-                            .background(.ultraThinMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .modifier(MapButtonBackgroundModifier())
                             .padding(10)
                     }
                 }
@@ -390,6 +454,19 @@ struct FlightDetailView: View {
         }
         .presentationDetents([.large])
         .preferredColorScheme(.dark)
+    }
+
+    // MARK: - Aircraft Photo Section
+
+    private var aircraftPhotoSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("Aircraft", icon: "airplane")
+
+            AircraftPhotoView(
+                registration: flight.aircraftRegistration,
+                aircraftType: flight.aircraftType
+            )
+        }
     }
 
     // MARK: - Flight Info Section
@@ -430,6 +507,8 @@ struct FlightDetailView: View {
                 }
                 FlightStatusRow(label: "Duration", value: durationString, icon: "clock")
                 rowDivider
+                taxiTimesRow
+                rowDivider
                 FlightStatusRow(label: "Distance",
                                value: "\(distanceMiles.formatted()) mi",
                                icon: "location")
@@ -437,6 +516,16 @@ struct FlightDetailView: View {
             .padding(.horizontal, 16)
             .skyNavCard()
         }
+    }
+
+    private var taxiTimesRow: some View {
+        let out = TaxiTimeService.times(for: flight.originIata).out
+        let inn = TaxiTimeService.times(for: flight.destinationIata).inbound
+        return FlightStatusRow(
+            label: "Taxi Times",
+            value: "Out ~\(out) min · In ~\(inn) min",
+            icon:  "road.lanes"
+        )
     }
 
     private var rowDivider: some View {
@@ -571,84 +660,3 @@ struct FlightDetailView: View {
             .padding(16)
             .skyNavCard()
             .onChange(of: notificationsEnabled) { _, _ in
-                SkyNavHaptic.select()
-                viewModel.toggleNotifications()
-            }
-        }
-    }
-
-    // MARK: - Delete Section
-
-    private var deleteSection: some View {
-        Button(role: .destructive) {
-            SkyNavHaptic.warning()
-            viewModel.deleteAndDismiss()
-            dismiss()
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "trash")
-                    .font(.system(size: 15, weight: .semibold))
-                Text("Remove Flight")
-                    .font(.skyNavHeadline)
-            }
-            .foregroundStyle(SkyNavColor.statusCancelled)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(SkyNavColor.statusCancelled.opacity(0.10))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(SkyNavColor.statusCancelled.opacity(0.25), lineWidth: 1)
-            )
-        }
-    }
-
-    // MARK: - Refresh Overlay
-
-    private var refreshOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.3).ignoresSafeArea()
-            VStack(spacing: 12) {
-                ProgressView()
-                    .progressViewStyle(.circular)
-                    .tint(SkyNavColor.accent)
-                    .scaleEffect(1.2)
-                Text("Updating…")
-                    .font(.skyNavCaption)
-                    .foregroundStyle(SkyNavColor.textSecondary)
-            }
-            .padding(24)
-            .glassCard()
-        }
-        .transition(.opacity)
-    }
-
-    // MARK: - Section Header
-
-    private func sectionHeader(_ title: String, icon: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(SkyNavColor.accent)
-            Text(title.uppercased())
-                .font(.skyNavCaption)
-                .foregroundStyle(SkyNavColor.textTertiary)
-                .tracking(1.0)
-        }
-    }
-}
-
-// MARK: - Preview
-
-#Preview {
-    // Minimal stub so the preview compiles without the real ViewModel.
-    // In Xcode, replace with your actual FlightDetailViewModel instance.
-    NavigationStack {
-        Text("FlightDetailView preview requires FlightDetailViewModel.")
-            .foregroundStyle(SkyNavColor.textSecondary)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(SkyNavColor.background)
-            .navigationTitle("AA 100")
-    }
-    .preferredColorScheme(.dark)
-}

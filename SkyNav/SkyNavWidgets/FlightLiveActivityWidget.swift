@@ -125,7 +125,7 @@ struct FlightLockScreenActivityView: View {
                     Text("Delayed \(context.state.delayMinutes)m")
                         .font(.system(size: 12, weight: .medium, design: .rounded))
                 }
-                .foregroundStyle(Color(hex: "#FF9F0A"))
+                .foregroundStyle(Color(hex: "#FFFFFF"))
             }
         }
         .padding(16)
@@ -147,9 +147,9 @@ struct FlightLockScreenActivityView: View {
     private var statusColor: Color {
         switch context.state.status {
         case "inFlight", "departed": return Color(hex: "#64D2FF")
-        case "delayed":              return Color(hex: "#FF9F0A")
+        case "delayed":              return Color(hex: "#FFFFFF")
         case "cancelled":            return Color(hex: "#FF453A")
-        case "boarding":             return Color(hex: "#30D158")
+        case "boarding":             return Color(hex: "#4A9EFF")
         default:                     return .secondary
         }
     }

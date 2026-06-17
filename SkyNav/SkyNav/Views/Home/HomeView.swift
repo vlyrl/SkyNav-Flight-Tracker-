@@ -22,7 +22,7 @@ struct HomeView: View {
             }
             .navigationTitle("SkyNav")
             .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(SkyNavColor.background, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .principal) {

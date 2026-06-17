@@ -204,58 +204,103 @@ struct PaywallView: View {
 
     // MARK: - CTA Section
 
+    @ViewBuilder
     private var ctaSection: some View {
-        VStack(spacing: 12) {
-            Button {
-                SkyNavHaptic.medium()
-                Task {
-                    await viewModel.purchase()
-                    if viewModel.isPremium {
-                        dismiss()
-                    } else if let error = viewModel.errorMessage {
-                        purchaseError = error
-                        showError = true
-                        viewModel.errorMessage = nil
+        if #available(iOS 26, *) {
+            VStack(spacing: 12) {
+                GlassEffectContainer {
+                    Button {
+                        SkyNavHaptic.medium()
+                        Task {
+                            await viewModel.purchase()
+                            if viewModel.isPremium {
+                                dismiss()
+                            } else if let error = viewModel.errorMessage {
+                                purchaseError = error
+                                showError = true
+                                viewModel.errorMessage = nil
+                            }
+                        }
+                    } label: {
+                        ZStack {
+                            if viewModel.isPurchasing {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                    .tint(.white)
+                            } else {
+                                VStack(spacing: 3) {
+                                    Text("Continue with \(viewModel.selectedPlan == .annual ? "Annual" : "Monthly")")
+                                        .font(.skyNavHeadline)
+                                        .foregroundStyle(.white)
+                                    Text(ctaSubtitle)
+                                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                                        .foregroundStyle(.white.opacity(0.75))
+                                }
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 60)
                     }
+                    .buttonStyle(.plain)
+                    .disabled(viewModel.isPurchasing)
+                    .glassEffect(.regular.tinted(SkyNavColor.gold.opacity(0.25)), in: .rect(cornerRadius: 18))
                 }
-            } label: {
-                ZStack {
-                    if viewModel.isPurchasing {
-                        ProgressView()
-                            .progressViewStyle(.circular)
-                            .tint(.white)
-                    } else {
-                        VStack(spacing: 3) {
-                            Text("Continue with \(viewModel.selectedPlan == .annual ? "Annual" : "Monthly")")
-                                .font(.skyNavHeadline)
-                                .foregroundStyle(.white)
-
-                            Text(ctaSubtitle)
-                                .font(.system(size: 12, weight: .regular, design: .rounded))
-                                .foregroundStyle(.white.opacity(0.75))
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+            }
+        } else {
+            VStack(spacing: 12) {
+                Button {
+                    SkyNavHaptic.medium()
+                    Task {
+                        await viewModel.purchase()
+                        if viewModel.isPremium {
+                            dismiss()
+                        } else if let error = viewModel.errorMessage {
+                            purchaseError = error
+                            showError = true
+                            viewModel.errorMessage = nil
                         }
                     }
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 60)
-                .background(
-                    viewModel.isPurchasing
-                        ? AnyShapeStyle(SkyNavColor.accentDim)
-                        : AnyShapeStyle(
-                            LinearGradient(
-                                colors: [SkyNavColor.accent, SkyNavColor.accentDim],
-                                startPoint: .leading, endPoint: .trailing
+                } label: {
+                    ZStack {
+                        if viewModel.isPurchasing {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .tint(.white)
+                        } else {
+                            VStack(spacing: 3) {
+                                Text("Continue with \(viewModel.selectedPlan == .annual ? "Annual" : "Monthly")")
+                                    .font(.skyNavHeadline)
+                                    .foregroundStyle(.white)
+
+                                Text(ctaSubtitle)
+                                    .font(.system(size: 12, weight: .regular, design: .rounded))
+                                    .foregroundStyle(.white.opacity(0.75))
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 60)
+                    .background(
+                        viewModel.isPurchasing
+                            ? AnyShapeStyle(SkyNavColor.accentDim)
+                            : AnyShapeStyle(
+                                LinearGradient(
+                                    colors: [SkyNavColor.accent, SkyNavColor.accentDim],
+                                    startPoint: .leading, endPoint: .trailing
+                                )
                             )
-                        )
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .shadow(color: SkyNavColor.accent.opacity(0.45), radius: 16, y: 8)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .shadow(color: SkyNavColor.accent.opacity(0.45), radius: 16, y: 8)
+                }
+                .buttonStyle(.plain)
+                .disabled(viewModel.isPurchasing)
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .animation(.easeInOut(duration: 0.2), value: viewModel.isPurchasing)
             }
-            .buttonStyle(.plain)
-            .disabled(viewModel.isPurchasing)
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .animation(.easeInOut(duration: 0.2), value: viewModel.isPurchasing)
         }
     }
 
@@ -449,6 +494,38 @@ struct FeatureRow: View {
     }
 }
 
+// MARK: - iOS 26 Glass Modifiers
+
+private struct PlanCardBackgroundModifier: ViewModifier {
+    let isSelected: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+                .glassEffect(.regular.tinted(SkyNavColor.gold.opacity(0.15)), in: .rect(cornerRadius: 20))
+        } else {
+            content
+                .background(
+                    isSelected
+                        ? SkyNavGradient.activeCard
+                        : LinearGradient(
+                            colors: [SkyNavColor.surface, SkyNavColor.surface],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .strokeBorder(
+                            isSelected ? SkyNavColor.accent : SkyNavColor.surfaceBorder,
+                            lineWidth: isSelected ? 1.5 : 0.5
+                        )
+                )
+        }
+    }
+}
+
 // MARK: - PlanCard
 
 struct PlanCard: View {
@@ -526,19 +603,7 @@ struct PlanCard: View {
             .padding(16)
             .frame(maxWidth: .infinity)
             .frame(height: 160)
-            .background(
-                isSelected
-                    ? SkyNavGradient.activeCard
-                    : LinearGradient(colors: [SkyNavColor.surface, SkyNavColor.surface], startPoint: .top, endPoint: .bottom)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .strokeBorder(
-                        isSelected ? SkyNavColor.accent : SkyNavColor.surfaceBorder,
-                        lineWidth: isSelected ? 1.5 : 0.5
-                    )
-            )
+            .modifier(PlanCardBackgroundModifier(isSelected: isSelected))
             .scaleEffect(isSelected ? 1.02 : 1.0)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
             .shadow(

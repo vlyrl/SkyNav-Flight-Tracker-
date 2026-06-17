@@ -72,6 +72,10 @@ struct AirportView: View {
                     airportHeaderCard(board: board)
                 }
 
+                // Ground delays & programs
+                AirportDelaysView(iataCode: iataCode)
+                    .padding(.horizontal, 20)
+
                 // Segmented control
                 boardSegmentPicker
                     .padding(.horizontal, 20)
@@ -108,6 +112,34 @@ struct AirportView: View {
 
     private func airportHeaderCard(board: AirportBoard) -> some View {
         VStack(spacing: 12) {
+            // Ground delay banner (if active programs exist)
+            let programs = AirportDelayService.activePrograms(for: iataCode)
+            if let label = AirportDelayService.badgeLabel(for: programs) {
+                let isStop = label.hasPrefix("GROUND")
+                HStack(spacing: 10) {
+                    Image(systemName: isStop ? "xmark.octagon.fill" : "exclamationmark.triangle.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text(label)
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                    Spacer()
+                    Text("FAA Program Active")
+                        .font(.skyNavCaption)
+                        .foregroundStyle(SkyNavColor.textTertiary)
+                }
+                .foregroundStyle(isStop ? SkyNavColor.statusCancelled : SkyNavColor.statusDelayed)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background((isStop ? SkyNavColor.statusCancelled : SkyNavColor.statusDelayed).opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(
+                            (isStop ? SkyNavColor.statusCancelled : SkyNavColor.statusDelayed).opacity(0.3),
+                            lineWidth: 1
+                        )
+                )
+            }
+
             // Weather row
             if let weather = board.weather {
                 weatherCard(weather: weather)
@@ -174,7 +206,7 @@ struct AirportView: View {
             .buttonStyle(.plain)
         }
         .padding(16)
-        .skyNavCard()
+        .skyNavGlassCard()
     }
 
     // MARK: - Security Badge
@@ -250,12 +282,7 @@ struct AirportView: View {
             }
         }
         .padding(4)
-        .background(SkyNavColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(SkyNavColor.surfaceBorder, lineWidth: 0.5)
-        )
+        .modifier(BoardPickerBackgroundModifier())
     }
 
     // MARK: - Empty Board
@@ -370,6 +397,26 @@ struct AirportView: View {
         if minutes < 15 { return SkyNavColor.statusOnTime }
         if minutes < 30 { return SkyNavColor.statusDelayed }
         return SkyNavColor.statusCancelled
+    }
+}
+
+// MARK: - iOS 26 Glass Modifiers
+
+private struct BoardPickerBackgroundModifier: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+                .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        } else {
+            content
+                .background(SkyNavColor.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(SkyNavColor.surfaceBorder, lineWidth: 0.5)
+                )
+        }
     }
 }
 

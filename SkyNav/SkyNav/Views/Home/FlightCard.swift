@@ -47,7 +47,7 @@ struct FlightCard: View {
                     progressBar
                 }
             }
-            .skyNavCard(gradient: isActive ? SkyNavGradient.activeCard : SkyNavGradient.card)
+            .modifier(FlightCardBackgroundModifier(isActive: isActive))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .strokeBorder(
@@ -298,5 +298,27 @@ struct FlightCard: View {
         formatter.dateStyle = .none
         formatter.timeZone = timezone
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - iOS 26 Glass Modifier
+
+private struct FlightCardBackgroundModifier: ViewModifier {
+    let isActive: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            if isActive {
+                content
+                    .glassEffect(.regular.tinted(Color(hex: "#1A2340").opacity(0.5)), in: .rect(cornerRadius: 16))
+            } else {
+                content
+                    .glassEffect(.regular, in: .rect(cornerRadius: 16))
+            }
+        } else {
+            content
+                .skyNavCard(gradient: isActive ? SkyNavGradient.activeCard : SkyNavGradient.card)
+        }
     }
 }

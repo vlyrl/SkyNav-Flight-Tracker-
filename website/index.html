@@ -1,0 +1,2405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkyNav — Your flights, beautifully tracked.</title>
+  <style>
+    /* ─── CSS Custom Properties ─────────────────────────────────────────────── */
+    :root {
+      --bg:            #0A0A0F;
+      --surface:       #12121A;
+      --surf-raised:   #1C1C28;
+      --accent:        #4A9EFF;
+      --on-time:       #34C759;
+      --cancelled:     #FF453A;
+      --in-flight:     #64D2FF;
+      --gold:          #FFD60A;
+      --text-primary:  #FFFFFF;
+      --text-secondary:#8E8E93;
+      --glass-bg:      rgba(18,18,26,0.6);
+      --glass-border:  rgba(255,255,255,0.08);
+      --glass-border-accent: rgba(74,158,255,0.35);
+      --radius-sm:     12px;
+      --radius-md:     18px;
+      --radius-lg:     24px;
+      --radius-xl:     32px;
+      --font: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    }
+
+    /* ─── Reset & Base ─────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: var(--font); }
+
+    /* ─── Starfield Canvas ──────────────────────────────────────────────────── */
+    #starfield {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ─── Navbar ────────────────────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 0 5%;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.3s, backdrop-filter 0.3s, border-bottom 0.3s;
+    }
+    nav.scrolled {
+      background: rgba(10,10,15,0.85);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .nav-logo {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-logo span.plane {
+      font-size: 1.1rem;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text-primary); }
+    .nav-cta {
+      padding: 9px 20px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border-accent);
+      border-radius: 100px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--accent);
+      backdrop-filter: blur(16px);
+      transition: all 0.2s;
+    }
+    .nav-cta:hover {
+      background: rgba(74,158,255,0.15);
+      border-color: rgba(74,158,255,0.6);
+    }
+    .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; }
+    .hamburger span { display: block; width: 24px; height: 2px; background: var(--text-primary); border-radius: 2px; }
+
+    /* ─── Section Wrapper ────────────────────────────────────────────────────── */
+    section {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ─── Hero ──────────────────────────────────────────────────────────────── */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 5% 80px;
+      overflow: hidden;
+    }
+    .hero-glow {
+      position: absolute;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 500px;
+      background: radial-gradient(ellipse, rgba(74,158,255,0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .hero-content { position: relative; z-index: 1; max-width: 780px; }
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+      backdrop-filter: blur(12px);
+    }
+    .hero-eyebrow::before {
+      content: '';
+      width: 7px; height: 7px;
+      background: var(--on-time);
+      border-radius: 50%;
+      animation: pulse-green 2s ease-in-out infinite;
+    }
+    @keyframes pulse-green {
+      0%,100% { box-shadow: 0 0 0 0 rgba(52,199,89,0.5); }
+      50% { box-shadow: 0 0 0 5px rgba(52,199,89,0); }
+    }
+    .hero-headline {
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #FFFFFF 0%, #C8E0FF 50%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: var(--text-secondary);
+      max-width: 560px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+      font-weight: 400;
+    }
+    .hero-ctas {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 72px;
+    }
+    .btn-appstore {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      color: #000;
+      padding: 14px 26px;
+      border-radius: var(--radius-md);
+      font-size: 0.95rem;
+      font-weight: 700;
+      border: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      letter-spacing: -0.02em;
+    }
+    .btn-appstore:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(255,255,255,0.15); }
+    .btn-appstore .apple-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+    .btn-appstore .btn-label { display: flex; flex-direction: column; text-align: left; }
+    .btn-appstore .btn-label small { font-size: 0.65rem; font-weight: 500; opacity: 0.7; }
+    .btn-ghost {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 26px;
+      border-radius: var(--radius-md);
+      font-size: 0.95rem;
+      font-weight: 600;
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      color: var(--text-primary);
+      transition: all 0.2s;
+      letter-spacing: -0.01em;
+    }
+    .btn-ghost:hover {
+      background: var(--glass-bg);
+      border-color: rgba(255,255,255,0.2);
+      transform: translateY(-2px);
+    }
+
+    /* ─── Phone Mockup ──────────────────────────────────────────────────────── */
+    .phone-wrapper {
+      position: relative;
+      display: inline-flex;
+      justify-content: center;
+    }
+    .phone-frame {
+      width: 280px;
+      height: 580px;
+      background: var(--surface);
+      border-radius: 44px;
+      border: 2px solid rgba(255,255,255,0.12);
+      position: relative;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04) inset,
+        0 40px 100px rgba(0,0,0,0.7),
+        0 0 60px rgba(74,158,255,0.1);
+      animation: phone-float 4s ease-in-out infinite;
+    }
+    @keyframes phone-float {
+      0%,100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+    .phone-notch {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 30px;
+      background: #000;
+      border-radius: 20px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .phone-notch::after {
+      content: '';
+      width: 10px; height: 10px;
+      background: #1a1a2e;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .phone-screen {
+      position: absolute;
+      inset: 0;
+      padding: 60px 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .phone-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      padding: 0 4px;
+    }
+    .phone-status-icons { display: flex; gap: 4px; align-items: center; }
+    .status-icon { font-size: 0.7rem; }
+
+    .flight-card {
+      background: var(--surf-raised);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      border: 1px solid rgba(74,158,255,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    .flight-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(74,158,255,0.5), transparent);
+    }
+    .fc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .fc-airline {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: 0.05em;
+    }
+    .fc-badge {
+      background: rgba(100,210,255,0.15);
+      border: 1px solid rgba(100,210,255,0.3);
+      border-radius: 100px;
+      padding: 3px 10px;
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: var(--in-flight);
+      letter-spacing: 0.05em;
+      animation: status-pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes status-pulse {
+      0%,100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .fc-route {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .fc-airport { text-align: center; }
+    .fc-iata {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .fc-city {
+      font-size: 0.55rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .fc-arc {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      position: relative;
+    }
+    .fc-arc-line {
+      width: 100%;
+      height: 20px;
+      position: relative;
+    }
+    .fc-arc-svg {
+      width: 100%;
+      height: 100%;
+    }
+    .fc-plane-icon {
+      font-size: 0.9rem;
+      position: absolute;
+      animation: fly-across 8s ease-in-out infinite;
+    }
+    @keyframes fly-across {
+      0% { left: 5%; top: 50%; transform: translateY(-50%) rotate(-8deg); }
+      50% { left: 45%; top: 0%; transform: translateY(0%) rotate(0deg); }
+      100% { left: 88%; top: 50%; transform: translateY(-50%) rotate(8deg); }
+    }
+    .fc-duration {
+      font-size: 0.55rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .fc-progress-track {
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .fc-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--in-flight));
+      border-radius: 2px;
+      animation: progress-fill 12s ease-in-out infinite;
+    }
+    @keyframes progress-fill {
+      0% { width: 5%; }
+      80% { width: 68%; }
+      90% { width: 68%; }
+      100% { width: 5%; }
+    }
+    .fc-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .fc-stat { text-align: center; }
+    .fc-stat-val {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .fc-stat-lbl {
+      font-size: 0.5rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .live-activity {
+      background: linear-gradient(135deg, rgba(74,158,255,0.1), rgba(100,210,255,0.05));
+      border: 1px solid rgba(74,158,255,0.15);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .la-icon { font-size: 1.1rem; }
+    .la-text { flex: 1; }
+    .la-title {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .la-sub {
+      font-size: 0.55rem;
+      color: var(--text-secondary);
+    }
+    .la-time {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--on-time);
+    }
+
+    /* ─── Particles (hero) ──────────────────────────────────────────────────── */
+    .particles-container {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .particle {
+      position: absolute;
+      width: 2px; height: 2px;
+      background: var(--accent);
+      border-radius: 50%;
+      opacity: 0;
+      animation: particle-rise linear infinite;
+    }
+
+    /* ─── Scroll Reveal ──────────────────────────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+    .reveal-delay-5 { transition-delay: 0.5s; }
+    .reveal-delay-6 { transition-delay: 0.6s; }
+
+    /* ─── Section Common ─────────────────────────────────────────────────────── */
+    .section-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 100px 5%;
+    }
+    .section-eyebrow {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+      max-width: 500px;
+      line-height: 1.7;
+    }
+    .section-header { margin-bottom: 56px; }
+
+    /* ─── Features Grid ──────────────────────────────────────────────────────── */
+    #features { background: transparent; }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+    .feature-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(74,158,255,0.1);
+      border-color: rgba(74,158,255,0.2);
+    }
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 16px;
+      display: block;
+      line-height: 1;
+    }
+    .feature-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+    .feature-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* ─── Showcase / Carousel ────────────────────────────────────────────────── */
+    #showcase {
+      overflow: hidden;
+      padding: 60px 0;
+    }
+    .showcase-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 5% 56px;
+    }
+    .carousel-track-wrapper {
+      overflow: hidden;
+      width: 100%;
+      mask-image: linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%);
+      -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%);
+    }
+    .carousel-track {
+      display: flex;
+      gap: 24px;
+      animation: carousel-scroll 30s linear infinite;
+      width: max-content;
+    }
+    .carousel-track:hover { animation-play-state: paused; }
+    @keyframes carousel-scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .mock-phone {
+      width: 200px;
+      height: 420px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-radius: 36px;
+      border: 2px solid rgba(255,255,255,0.1);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 30px rgba(74,158,255,0.05);
+    }
+    .mock-phone-notch {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70px;
+      height: 22px;
+      background: #000;
+      border-radius: 15px;
+      z-index: 5;
+    }
+    .mock-screen {
+      position: absolute;
+      inset: 0;
+      padding: 44px 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    /* Mock Screen 1: Home */
+    .mock-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2px;
+      margin-bottom: 4px;
+    }
+    .mock-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .mock-avatar {
+      width: 26px; height: 26px;
+      background: linear-gradient(135deg, var(--accent), var(--in-flight));
+      border-radius: 50%;
+    }
+    .mock-flight-row {
+      background: var(--surf-raised);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .mfr-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .mfr-content { flex: 1; }
+    .mfr-route {
+      font-size: 0.65rem;
+      font-weight: 700;
+    }
+    .mfr-time {
+      font-size: 0.55rem;
+      color: var(--text-secondary);
+    }
+    .mfr-status {
+      font-size: 0.55rem;
+      font-weight: 700;
+      border-radius: 100px;
+      padding: 2px 7px;
+    }
+
+    /* Mock Screen 2: Flight Detail Map */
+    .mock-map {
+      background: linear-gradient(160deg, #0d1b2e 0%, #0a1628 50%, #0d1220 100%);
+      border-radius: 12px;
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      min-height: 120px;
+    }
+    .mock-map-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(74,158,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(74,158,255,0.04) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .mock-map-arc {
+      position: absolute;
+      top: 50%; left: 10%; right: 10%;
+      height: 60px;
+      transform: translateY(-50%);
+    }
+    .mock-map-dot {
+      position: absolute;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      top: 60%; left: 57%;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 0 3px rgba(74,158,255,0.3);
+      animation: dot-pulse 2s ease-in-out infinite;
+    }
+    @keyframes dot-pulse {
+      0%,100% { box-shadow: 0 0 0 3px rgba(74,158,255,0.3); }
+      50% { box-shadow: 0 0 0 7px rgba(74,158,255,0); }
+    }
+    .mock-detail-card {
+      background: var(--surf-raised);
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .mdc-route {
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+    .mdc-stats {
+      display: flex;
+      gap: 12px;
+    }
+    .mdc-stat-lbl { font-size: 0.5rem; color: var(--text-secondary); }
+    .mdc-stat-val { font-size: 0.65rem; font-weight: 700; }
+
+    /* Mock Screen 3: Live Activity */
+    .mock-island {
+      background: #000;
+      border-radius: 20px;
+      padding: 10px 14px;
+      margin: 0 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .island-airline-dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #003d7a, #005cbf);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.55rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .island-content { flex: 1; }
+    .island-flight-num { font-size: 0.6rem; font-weight: 700; }
+    .island-route { font-size: 0.55rem; color: var(--text-secondary); }
+    .island-time { font-size: 0.65rem; font-weight: 800; color: var(--on-time); }
+    .mock-lock-notif {
+      background: rgba(28,28,40,0.95);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin: 0 2px;
+      border: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(20px);
+    }
+    .mln-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .mln-app-icon {
+      width: 18px; height: 18px;
+      background: linear-gradient(135deg, var(--accent), var(--in-flight));
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+    }
+    .mln-app-name { font-size: 0.6rem; color: var(--text-secondary); font-weight: 600; }
+    .mln-time { font-size: 0.55rem; color: var(--text-secondary); margin-left: auto; }
+    .mln-title { font-size: 0.7rem; font-weight: 700; margin-bottom: 2px; }
+    .mln-body { font-size: 0.6rem; color: var(--text-secondary); }
+    .mln-progress { height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+    .mln-progress-fill { height: 100%; width: 62%; background: linear-gradient(90deg, var(--accent), var(--in-flight)); border-radius: 2px; }
+
+    /* Mock Screen 4: Trip/Connection */
+    .mock-trip-header {
+      background: linear-gradient(135deg, rgba(74,158,255,0.15), rgba(100,210,255,0.08));
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid rgba(74,158,255,0.15);
+    }
+    .mth-label { font-size: 0.55rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .mth-dest { font-size: 0.85rem; font-weight: 800; letter-spacing: -0.02em; }
+    .mock-connection-card {
+      background: var(--surf-raised);
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid rgba(52,199,89,0.2);
+      position: relative;
+    }
+    .mcc-badge {
+      position: absolute;
+      top: 8px; right: 8px;
+      background: rgba(52,199,89,0.15);
+      border: 1px solid rgba(52,199,89,0.3);
+      border-radius: 100px;
+      padding: 2px 8px;
+      font-size: 0.5rem;
+      font-weight: 700;
+      color: var(--on-time);
+    }
+    .mcc-title { font-size: 0.6rem; color: var(--text-secondary); margin-bottom: 4px; font-weight: 600; }
+    .mcc-time { font-size: 0.75rem; font-weight: 800; }
+    .mcc-sub { font-size: 0.55rem; color: var(--on-time); margin-top: 2px; }
+    .mock-legs {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .mock-leg {
+      background: var(--surf-raised);
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .leg-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .leg-info { flex: 1; }
+    .leg-route { font-size: 0.6rem; font-weight: 700; }
+    .leg-num { font-size: 0.5rem; color: var(--text-secondary); }
+    .leg-time { font-size: 0.6rem; font-weight: 700; color: var(--on-time); }
+
+    /* Mock Screen 5: Paywall */
+    .mock-paywall-header {
+      text-align: center;
+      padding: 6px 0;
+    }
+    .mph-icon { font-size: 1.5rem; margin-bottom: 4px; }
+    .mph-title { font-size: 0.75rem; font-weight: 800; letter-spacing: -0.02em; }
+    .mph-sub { font-size: 0.55rem; color: var(--text-secondary); }
+    .mock-plan-card {
+      border-radius: 12px;
+      padding: 10px 12px;
+      border-width: 1px;
+      border-style: solid;
+    }
+    .mock-plan-card.monthly {
+      background: rgba(28,28,40,0.8);
+      border-color: rgba(255,255,255,0.08);
+    }
+    .mock-plan-card.annual {
+      background: linear-gradient(135deg, rgba(255,214,10,0.08), rgba(255,214,10,0.03));
+      border-color: rgba(255,214,10,0.3);
+    }
+    .mpc-plan { font-size: 0.6rem; color: var(--text-secondary); font-weight: 600; }
+    .mpc-price { font-size: 0.9rem; font-weight: 800; letter-spacing: -0.02em; }
+    .mpc-badge {
+      display: inline-block;
+      background: var(--gold);
+      color: #000;
+      border-radius: 100px;
+      padding: 1px 8px;
+      font-size: 0.5rem;
+      font-weight: 800;
+      margin-top: 3px;
+    }
+    .mock-cta-btn {
+      background: var(--accent);
+      border-radius: 100px;
+      padding: 10px;
+      text-align: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* ─── Pricing ─────────────────────────────────────────────────────────── */
+    #pricing { background: transparent; }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .pricing-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-xl);
+      padding: 36px 32px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .pricing-card:hover { transform: translateY(-4px); }
+    .pricing-card.featured {
+      border-color: rgba(255,214,10,0.3);
+      background: linear-gradient(135deg, rgba(255,214,10,0.06) 0%, rgba(18,18,26,0.6) 50%);
+    }
+    .pricing-card.featured::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+    .pricing-badge {
+      position: absolute;
+      top: 20px; right: 20px;
+      background: var(--gold);
+      color: #000;
+      padding: 4px 14px;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+    .pricing-plan {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .pricing-amount {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .pricing-amount sup {
+      font-size: 1.4rem;
+      font-weight: 700;
+      vertical-align: super;
+    }
+    .pricing-period {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+    .pricing-save {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--on-time);
+      margin-bottom: 28px;
+    }
+    .pricing-divider {
+      height: 1px;
+      background: var(--glass-border);
+      margin-bottom: 24px;
+    }
+    .pricing-features { list-style: none; margin-bottom: 32px; }
+    .pricing-features li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      padding: 6px 0;
+    }
+    .pricing-features li::before {
+      content: '✓';
+      width: 18px; height: 18px;
+      background: rgba(52,199,89,0.15);
+      border: 1px solid rgba(52,199,89,0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--on-time);
+      flex-shrink: 0;
+    }
+    .btn-trial {
+      width: 100%;
+      padding: 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.95rem;
+      font-weight: 700;
+      border: none;
+      transition: all 0.2s;
+      letter-spacing: -0.01em;
+    }
+    .btn-trial.primary {
+      background: linear-gradient(135deg, var(--accent), #3888ee);
+      color: #fff;
+    }
+    .btn-trial.primary:hover { box-shadow: 0 8px 30px rgba(74,158,255,0.35); transform: translateY(-2px); }
+    .btn-trial.secondary {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      color: var(--text-primary);
+    }
+    .btn-trial.secondary:hover { border-color: rgba(255,255,255,0.2); }
+    .pricing-note {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 20px;
+    }
+
+    /* ─── Footer ──────────────────────────────────────────────────────────── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--glass-border);
+      padding: 60px 5% 40px;
+      background: linear-gradient(to bottom, transparent, rgba(10,10,15,0.8));
+    }
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .footer-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 48px;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+    .footer-brand { max-width: 280px; }
+    .footer-logo {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .footer-tagline {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .footer-links {
+      display: flex;
+      gap: 48px;
+      flex-wrap: wrap;
+    }
+    .footer-link-group { display: flex; flex-direction: column; gap: 12px; }
+    .footer-link-group a {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      transition: color 0.2s;
+    }
+    .footer-link-group a:hover { color: var(--text-primary); }
+    .footer-appstore {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surf-raised);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      transition: all 0.2s;
+    }
+    .footer-appstore:hover { border-color: rgba(255,255,255,0.2); }
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 32px;
+      border-top: 1px solid var(--glass-border);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-copyright { font-size: 0.8rem; color: var(--text-secondary); }
+    .footer-heart { font-size: 0.8rem; color: var(--text-secondary); }
+
+    /* ─── Divider decoration ─────────────────────────────────────────────────── */
+    .section-divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ─── Responsive ──────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .nav-links.open {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 64px; left: 0; right: 0;
+        background: rgba(10,10,15,0.95);
+        backdrop-filter: blur(20px);
+        padding: 20px;
+        gap: 16px;
+        border-bottom: 1px solid var(--glass-border);
+      }
+      .features-grid { grid-template-columns: 1fr; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .footer-top { flex-direction: column; }
+      .footer-links { gap: 24px; }
+      .pricing-card { padding: 28px 24px; }
+      .phone-frame { width: 240px; height: 490px; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-ctas { flex-direction: column; align-items: center; }
+      .btn-appstore, .btn-ghost { width: 100%; max-width: 300px; justify-content: center; }
+    }
+
+    /* ─── Boarding Pass Cards (Hero Phone) ─────────────────────────────────── */
+    .ps-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2px;
+    }
+    .ps-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+    .ps-avatar {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--in-flight));
+      border-radius: 50%;
+    }
+    .bp-card {
+      background: var(--surface);
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.07);
+      overflow: hidden;
+      position: relative;
+      padding: 10px 12px 0;
+    }
+    .bp-active {
+      background: #1A2340;
+      border-color: rgba(74,158,255,0.35);
+      box-shadow: -3px 0 0 0 var(--accent) inset;
+    }
+    .bp-airline-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .bp-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .bp-logo {
+      width: 18px; height: 18px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.42rem;
+      font-weight: 800;
+      color: #fff;
+      flex-shrink: 0;
+      letter-spacing: 0;
+    }
+    .bp-airline-name {
+      font-size: 0.5rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      line-height: 1;
+    }
+    .bp-flight-num {
+      font-size: 0.6rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+    .bp-status-pill {
+      border-radius: 100px;
+      padding: 2px 8px;
+      font-size: 0.48rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+    .bp-inflight {
+      background: rgba(100,210,255,0.12);
+      border: 1px solid rgba(100,210,255,0.25);
+      color: var(--in-flight);
+      animation: status-pulse 2.5s ease-in-out infinite;
+    }
+    .bp-ontime {
+      background: rgba(52,199,89,0.12);
+      border: 1px solid rgba(52,199,89,0.25);
+      color: var(--on-time);
+    }
+    .bp-scheduled {
+      background: rgba(142,142,147,0.1);
+      border: 1px solid rgba(142,142,147,0.2);
+      color: var(--text-secondary);
+    }
+    .bp-iata-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .bp-airport { flex-shrink: 0; }
+    .bp-iata {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+    .bp-city {
+      font-size: 0.48rem;
+      color: var(--text-secondary);
+      margin-top: 1px;
+    }
+    .bp-arc-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 6px;
+    }
+    .bp-arc-center svg { width: 100%; height: 20px; }
+    .bp-plane { font-size: 0.65rem; margin-top: -2px; }
+    .bp-dur { font-size: 0.48rem; color: var(--text-secondary); margin-top: 1px; font-weight: 600; }
+    .bp-times-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .bp-time { font-size: 0.75rem; font-weight: 700; color: var(--text-primary); }
+    .bp-footer-row {
+      display: flex;
+      justify-content: space-between;
+      padding-bottom: 6px;
+    }
+    .bp-detail { font-size: 0.48rem; color: var(--text-secondary); font-weight: 500; }
+    .bp-progress-track { height: 3px; background: rgba(255,255,255,0.06); margin: 0 -12px; }
+    .bp-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--in-flight));
+      border-radius: 0 2px 2px 0;
+    }
+    .bp-card-sm {
+      background: var(--surf-raised);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .bpsm-logo {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.5rem;
+      font-weight: 800;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .bpsm-content { flex: 1; }
+    .bpsm-route {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .bpsm-detail { font-size: 0.48rem; color: var(--text-secondary); margin-top: 2px; }
+    .phone-tab-bar {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 52px;
+      background: rgba(12,12,20,0.96);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 8px 8px;
+    }
+    .ptb-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 4px 8px;
+    }
+    .ptb-icon { font-size: 0.9rem; line-height: 1; color: var(--text-secondary); }
+    .ptb-label { font-size: 0.42rem; font-weight: 600; color: var(--text-secondary); }
+    .ptb-item.active .ptb-icon { color: var(--accent); }
+    .ptb-item.active .ptb-label { color: var(--accent); }
+
+    /* ─── Carousel Mock Boarding Pass Cards ─────────────────────────────────── */
+    .mps-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.48rem;
+      font-weight: 700;
+      padding: 0 2px;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+    .mps-icons { display: flex; gap: 3px; font-size: 0.4rem; }
+    .mbp-card {
+      background: var(--surf-raised);
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.05);
+      padding: 7px 9px 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .mbp-active {
+      background: #1A2340;
+      border-color: rgba(74,158,255,0.3);
+      box-shadow: -2px 0 0 0 var(--accent) inset;
+    }
+    .mbp-airline-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    .mbp-logo-wrap { display: flex; align-items: center; gap: 4px; }
+    .mbp-logo {
+      width: 14px; height: 14px;
+      border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.35rem; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+    .mbp-airline-name { font-size: 0.4rem; color: var(--text-secondary); font-weight: 600; line-height: 1; }
+    .mbp-flight-num { font-size: 0.48rem; font-weight: 800; color: var(--text-primary); }
+    .mbp-pill {
+      border-radius: 100px;
+      padding: 1px 5px;
+      font-size: 0.36rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+    .mbp-inflight { background: rgba(100,210,255,0.12); border: 1px solid rgba(100,210,255,0.2); color: var(--in-flight); }
+    .mbp-ontime { background: rgba(52,199,89,0.12); border: 1px solid rgba(52,199,89,0.2); color: var(--on-time); }
+    .mbp-scheduled { background: rgba(142,142,147,0.1); border: 1px solid rgba(142,142,147,0.15); color: var(--text-secondary); }
+    .mbp-route-row {
+      display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2px;
+    }
+    .mbp-iata { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+    .mbp-city { font-size: 0.36rem; color: var(--text-secondary); margin-top: 1px; }
+    .mbp-arc-mid {
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center; padding: 0 4px;
+    }
+    .mbp-arc-mid svg { width: 100%; height: 13px; }
+    .mbp-plane-sm { font-size: 0.48rem; }
+    .mbp-dur { font-size: 0.36rem; color: var(--text-secondary); font-weight: 600; }
+    .mbp-times-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+    .mbp-time { font-size: 0.52rem; font-weight: 700; }
+    .mbp-footer-row { display: flex; justify-content: space-between; padding-bottom: 4px; }
+    .mbp-detail { font-size: 0.36rem; color: var(--text-secondary); }
+    .mbp-progress-track { height: 2px; background: rgba(255,255,255,0.06); margin: 0 -9px; }
+    .mbp-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--in-flight));
+      border-radius: 0 2px 2px 0;
+    }
+    .mock-tab-bar {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 36px;
+      background: rgba(12,12,20,0.96);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 4px 4px;
+    }
+    .mtb-item { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 2px 6px; }
+    .mtb-icon { font-size: 0.65rem; line-height: 1; color: var(--text-secondary); }
+    .mtb-label { font-size: 0.3rem; font-weight: 600; color: var(--text-secondary); }
+    .mtb-item.active .mtb-icon { color: var(--accent); }
+    .mtb-item.active .mtb-label { color: var(--accent); }
+
+    /* ─── Flight Detail (Screen 2) ──────────────────────────────────────────── */
+    .fd-header {
+      display: flex; align-items: center; justify-content: space-between; padding: 0 2px;
+    }
+    .fd-back { font-size: 0.48rem; color: var(--accent); font-weight: 600; }
+    .fd-title { font-size: 0.65rem; font-weight: 800; }
+    .fd-chips {
+      display: flex; gap: 4px; margin-bottom: 4px;
+    }
+    .fd-chip {
+      flex: 1;
+      background: var(--surf-raised);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 4px 6px;
+      text-align: center;
+    }
+    .fd-chip-lbl { font-size: 0.32rem; color: var(--text-secondary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+    .fd-chip-val { font-size: 0.5rem; font-weight: 800; color: var(--text-primary); margin-top: 1px; }
+    .fd-progress-wrap { padding: 0 2px; margin-bottom: 4px; }
+    .fd-progress-bar { height: 2px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; margin: 3px 0; }
+    .fd-progress-fill { height: 100%; width: 60%; background: linear-gradient(90deg, var(--accent), var(--in-flight)); }
+    .fd-progress-labels { display: flex; justify-content: space-between; }
+    .fd-plabel { font-size: 0.36rem; color: var(--text-secondary); }
+    .fd-info-rows { padding: 0 2px; }
+    .fd-info-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .fd-info-key { font-size: 0.4rem; color: var(--text-secondary); font-weight: 500; }
+    .fd-info-val { font-size: 0.4rem; font-weight: 700; color: var(--text-primary); }
+
+    /* ─── Trip View (Screen 4) ──────────────────────────────────────────────── */
+    .layover-card {
+      border-radius: 9px;
+      padding: 6px 8px;
+      background: rgba(255,159,10,0.08);
+      border: 1px solid rgba(255,159,10,0.25);
+      box-shadow: -2px 0 0 0 #FF9F0A inset;
+    }
+    .lc-title { font-size: 0.5rem; font-weight: 800; color: var(--text-primary); }
+    .lc-sub { font-size: 0.38rem; color: var(--text-secondary); margin-top: 1px; }
+    .conn-card {
+      background: rgba(52,199,89,0.06);
+      border: 1px solid rgba(52,199,89,0.2);
+      border-radius: 9px;
+      padding: 6px 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .conn-badge {
+      background: rgba(52,199,89,0.15);
+      border: 1px solid rgba(52,199,89,0.3);
+      border-radius: 100px;
+      padding: 2px 5px;
+      font-size: 0.36rem;
+      font-weight: 800;
+      color: var(--on-time);
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .conn-text { flex: 1; }
+    .conn-title { font-size: 0.46rem; font-weight: 800; color: var(--on-time); }
+    .conn-sub { font-size: 0.36rem; color: var(--text-secondary); margin-top: 1px; }
+  </style>
+</head>
+<body>
+
+  <!-- Starfield Canvas -->
+  <canvas id="starfield"></canvas>
+
+  <!-- ─── NAVBAR ─────────────────────────────────────────────────────────── -->
+  <nav id="navbar">
+    <div class="nav-logo">
+      <span class="plane">✈</span>
+      <span>SkyNav</span>
+    </div>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#pricing">Download</a></li>
+    </ul>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <a href="#pricing" class="nav-cta">Get SkyNav</a>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ─── HERO ───────────────────────────────────────────────────────────── -->
+  <section id="hero">
+    <div class="hero-glow"></div>
+    <div class="particles-container" id="particlesContainer"></div>
+
+    <div class="hero-content">
+      <div class="hero-eyebrow reveal">Now available · iOS 26</div>
+      <h1 class="hero-headline reveal reveal-delay-1">Your flights,<br>beautifully tracked.</h1>
+      <p class="hero-sub reveal reveal-delay-2">Real-time flight data, live maps, gate alerts, and a premium experience built for iOS 26.</p>
+      <div class="hero-ctas reveal reveal-delay-3">
+        <a href="#" class="btn-appstore">
+          <span class="apple-icon">&#xf8ff;</span>
+          <span class="btn-label">
+            <small>Download on the</small>
+            App Store
+          </span>
+        </a>
+        <a href="#features" class="btn-ghost">See it in action <span>→</span></a>
+      </div>
+
+      <!-- Phone Mockup -->
+      <div class="phone-wrapper reveal reveal-delay-4">
+        <div class="phone-frame">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="phone-status-bar">
+              <span>9:41</span>
+              <div class="phone-status-icons">
+                <span class="status-icon" style="font-size:0.55rem;letter-spacing:-1px">▐▐▐▐</span>
+                <span class="status-icon" style="font-size:0.6rem">WiFi</span>
+                <span class="status-icon">🔋</span>
+              </div>
+            </div>
+
+            <!-- Screen title -->
+            <div class="ps-title-row">
+              <div class="ps-title">My Flights</div>
+              <div class="ps-avatar"></div>
+            </div>
+
+            <!-- Active flight card – boarding pass style -->
+            <div class="bp-card bp-active">
+              <div class="bp-airline-row">
+                <div class="bp-logo-wrap">
+                  <div class="bp-logo" style="background:#1E5ECC">UA</div>
+                  <div>
+                    <div class="bp-airline-name">United Airlines</div>
+                    <div class="bp-flight-num">UA 2241</div>
+                  </div>
+                </div>
+                <div class="bp-status-pill bp-inflight">IN FLIGHT</div>
+              </div>
+              <div class="bp-iata-row">
+                <div class="bp-airport">
+                  <div class="bp-iata">JFK</div>
+                  <div class="bp-city">New York</div>
+                </div>
+                <div class="bp-arc-center">
+                  <svg viewBox="0 0 80 22" fill="none">
+                    <path d="M4 19 Q40 3 76 19" stroke="rgba(74,158,255,0.22)" stroke-width="1.2" stroke-dasharray="3,3"/>
+                    <path d="M4 19 Q28 5 54 13" stroke="url(#ha1)" stroke-width="1.5"/>
+                    <defs>
+                      <linearGradient id="ha1" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#4A9EFF"/>
+                        <stop offset="100%" stop-color="#64D2FF"/>
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <span class="bp-plane">✈</span>
+                  <div class="bp-dur">5h 27m</div>
+                </div>
+                <div class="bp-airport" style="text-align:right">
+                  <div class="bp-iata">LAX</div>
+                  <div class="bp-city">Los Angeles</div>
+                </div>
+              </div>
+              <div class="bp-times-row">
+                <div class="bp-time">08:15</div>
+                <div class="bp-time">11:42</div>
+              </div>
+              <div class="bp-footer-row">
+                <span class="bp-detail">Gate B22 · Terminal B</span>
+                <span class="bp-detail">+0 min</span>
+              </div>
+              <div class="bp-progress-track">
+                <div class="bp-progress-fill" style="width:68%"></div>
+              </div>
+            </div>
+
+            <!-- Scheduled card 1 -->
+            <div class="bp-card-sm">
+              <div class="bpsm-logo" style="background:#D6001C">DL</div>
+              <div class="bpsm-content">
+                <div class="bpsm-route">
+                  <span>LAX</span>
+                  <span style="color:var(--text-secondary);font-weight:400;font-size:0.5rem">→</span>
+                  <span>ORD</span>
+                </div>
+                <div class="bpsm-detail">DL 1829 · Today 14:45 · Gate 45</div>
+              </div>
+              <div class="bp-status-pill bp-ontime">ON TIME</div>
+            </div>
+
+            <!-- Scheduled card 2 -->
+            <div class="bp-card-sm">
+              <div class="bpsm-logo" style="background:#C41E3A">AA</div>
+              <div class="bpsm-content">
+                <div class="bpsm-route">
+                  <span>ORD</span>
+                  <span style="color:var(--text-secondary);font-weight:400;font-size:0.5rem">→</span>
+                  <span>LHR</span>
+                </div>
+                <div class="bpsm-detail">AA 445 · Jun 18 21:30 · Gate H3</div>
+              </div>
+              <div class="bp-status-pill bp-scheduled">SCHEDULED</div>
+            </div>
+
+            <!-- Bottom tab bar -->
+            <div class="phone-tab-bar">
+              <div class="ptb-item">
+                <div class="ptb-icon">🌐</div>
+                <div class="ptb-label">Explore</div>
+              </div>
+              <div class="ptb-item active">
+                <div class="ptb-icon">✈</div>
+                <div class="ptb-label">Flights</div>
+              </div>
+              <div class="ptb-item">
+                <div class="ptb-icon">⊞</div>
+                <div class="ptb-label">Trips</div>
+              </div>
+              <div class="ptb-item">
+                <div class="ptb-icon">⚙</div>
+                <div class="ptb-label">Settings</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- ─── FEATURES ──────────────────────────────────────────────────────── -->
+  <section id="features">
+    <div class="section-inner">
+      <div class="section-header">
+        <div class="section-eyebrow reveal">Why SkyNav</div>
+        <h2 class="section-title reveal reveal-delay-1">Everything your<br>journey needs.</h2>
+        <p class="section-sub reveal reveal-delay-2">Built from the ground up for travelers who care about the details.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card reveal reveal-delay-1">
+          <span class="feature-icon">✈</span>
+          <h3 class="feature-title">Live Flight Tracking</h3>
+          <p class="feature-desc">Real-time position, altitude, and speed from FlightAware AeroAPI — updated every 30 seconds so you're always in the know.</p>
+        </div>
+        <div class="feature-card reveal reveal-delay-2">
+          <span class="feature-icon">🗺</span>
+          <h3 class="feature-title">Live Map</h3>
+          <p class="feature-desc">MapKit-powered route with a great-circle arc and live aircraft position marker. See exactly where your plane is, in beautiful detail.</p>
+        </div>
+        <div class="feature-card reveal reveal-delay-3">
+          <span class="feature-icon">🔔</span>
+          <h3 class="feature-title">Smart Alerts</h3>
+          <p class="feature-desc">Gate changes, delays, and boarding notifications pushed to your lock screen before you even think to check. Never miss a beat.</p>
+        </div>
+        <div class="feature-card reveal reveal-delay-4">
+          <span class="feature-icon">🔗</span>
+          <h3 class="feature-title">Connection Assistant</h3>
+          <p class="feature-desc">We calculate your connection time in real-time and warn you before the gate agent does. Travel with confidence, not anxiety.</p>
+        </div>
+        <div class="feature-card reveal reveal-delay-5">
+          <span class="feature-icon">📅</span>
+          <h3 class="feature-title">Calendar Sync</h3>
+          <p class="feature-desc">Flights automatically sync to your calendar with gate info and 2-hour departure alerts. Your schedule, always updated.</p>
+        </div>
+        <div class="feature-card reveal reveal-delay-6">
+          <span class="feature-icon">🌐</span>
+          <h3 class="feature-title">iOS 26 Liquid Glass</h3>
+          <p class="feature-desc">Built for iOS 26 with the new glass design language and Dynamic Island integration. The most beautiful flight tracker on any platform.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- ─── SHOWCASE CAROUSEL ─────────────────────────────────────────────── -->
+  <section id="showcase">
+    <div class="showcase-inner">
+      <div class="section-eyebrow reveal" style="text-align:center;">The App</div>
+      <h2 class="section-title reveal reveal-delay-1" style="text-align:center;margin-bottom:8px;">Crafted for every<br>moment of your trip.</h2>
+      <p class="section-sub reveal reveal-delay-2" style="text-align:center;max-width:420px;margin:0 auto 56px;">From departure to gate, SkyNav has a screen for every moment.</p>
+    </div>
+    <div class="carousel-track-wrapper">
+      <div class="carousel-track" id="carouselTrack">
+        <!-- Screen 1: Home -->
+        <div class="mock-phone">
+          <div class="mock-phone-notch"></div>
+          <div class="mock-screen">
+            <div class="mps-bar">
+              <span>9:41</span>
+              <div class="mps-icons"><span>▐▐▐▐</span><span>WiFi</span><span>🔋</span></div>
+            </div>
+            <div class="mock-header">
+              <span class="mock-title">My Flights</span>
+              <div class="mock-avatar"></div>
+            </div>
+            <!-- Active card -->
+            <div class="mbp-card mbp-active">
+              <div class="mbp-airline-row">
+                <div class="mbp-logo-wrap">
+                  <div class="mbp-logo" style="background:#1E5ECC">UA</div>
+                  <div>
+                    <div class="mbp-airline-name">United Airlines</div>
+                    <div class="mbp-flight-num">UA 2241</div>
+                  </div>
+                </div>
+                <div class="mbp-pill mbp-inflight">IN FLIGHT</div>
+              </div>
+              <div class="mbp-route-row">
+                <div class="mbp-airport">
+                  <div class="mbp-iata">JFK</div>
+                  <div class="mbp-city">New York</div>
+                </div>
+                <div class="mbp-arc-mid">
+                  <svg viewBox="0 0 60 13" fill="none"><path d="M3 11 Q30 2 57 11" stroke="rgba(74,158,255,0.22)" stroke-width="1" stroke-dasharray="2,2"/><path d="M3 11 Q20 3 38 8" stroke="url(#s1a)" stroke-width="1.2"/><defs><linearGradient id="s1a" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#4A9EFF"/><stop offset="100%" stop-color="#64D2FF"/></linearGradient></defs></svg>
+                  <span class="mbp-plane-sm">✈</span>
+                  <div class="mbp-dur">5h 27m</div>
+                </div>
+                <div style="text-align:right">
+                  <div class="mbp-iata">LAX</div>
+                  <div class="mbp-city">Los Angeles</div>
+                </div>
+              </div>
+              <div class="mbp-times-row">
+                <div class="mbp-time">08:15</div>
+                <div class="mbp-time">11:42</div>
+              </div>
+              <div class="mbp-footer-row">
+                <span class="mbp-detail">Gate B22 · Terminal B</span>
+                <span class="mbp-detail">+0 min</span>
+              </div>
+              <div class="mbp-progress-track"><div class="mbp-progress-fill" style="width:68%"></div></div>
+            </div>
+            <!-- Scheduled -->
+            <div class="mbp-card" style="display:flex;align-items:center;gap:6px;padding:6px 8px;">
+              <div style="width:20px;height:20px;border-radius:5px;background:#D6001C;display:flex;align-items:center;justify-content:center;font-size:0.35rem;font-weight:800;color:#fff;flex-shrink:0">DL</div>
+              <div style="flex:1"><div style="font-size:0.52rem;font-weight:800">LAX → ORD</div><div style="font-size:0.36rem;color:var(--text-secondary)">DL 1829 · 14:45</div></div>
+              <div class="mbp-pill mbp-ontime">ON TIME</div>
+            </div>
+            <div class="mbp-card" style="display:flex;align-items:center;gap:6px;padding:6px 8px;">
+              <div style="width:20px;height:20px;border-radius:5px;background:#C41E3A;display:flex;align-items:center;justify-content:center;font-size:0.35rem;font-weight:800;color:#fff;flex-shrink:0">AA</div>
+              <div style="flex:1"><div style="font-size:0.52rem;font-weight:800">ORD → LHR</div><div style="font-size:0.36rem;color:var(--text-secondary)">AA 445 · 21:30</div></div>
+              <div class="mbp-pill mbp-scheduled">SCHEDULED</div>
+            </div>
+            <!-- Tab bar -->
+            <div class="mock-tab-bar">
+              <div class="mtb-item"><div class="mtb-icon">🌐</div><div class="mtb-label">Explore</div></div>
+              <div class="mtb-item active"><div class="mtb-icon">✈</div><div class="mtb-label">Flights</div></div>
+              <div class="mtb-item"><div class="mtb-icon">⊞</div><div class="mtb-label">Trips</div></div>
+              <div class="mtb-item"><div class="mtb-icon">⚙</div><div class="mtb-label">Settings</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Screen 2: Flight Detail / Map -->
+        <div class="mock-phone">
+          <div class="mock-phone-notch"></div>
+          <div class="mock-screen">
+            <div class="fd-header">
+              <div class="fd-back">‹ Flights</div>
+              <div class="fd-title">UA 2241</div>
+              <div class="mbp-pill mbp-inflight" style="font-size:0.34rem;padding:2px 5px">IN FLIGHT</div>
+            </div>
+            <div style="font-size:0.36rem;color:var(--text-secondary);text-align:center;margin-bottom:2px">United Airlines · Boeing 737-900</div>
+            <!-- Map -->
+            <div class="mock-map" style="flex:1;min-height:0">
+              <div class="mock-map-grid"></div>
+              <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 180 130" fill="none">
+                <line x1="0" y1="32" x2="180" y2="32" stroke="rgba(74,158,255,0.07)" stroke-width="0.5"/>
+                <line x1="0" y1="65" x2="180" y2="65" stroke="rgba(74,158,255,0.07)" stroke-width="0.5"/>
+                <line x1="0" y1="98" x2="180" y2="98" stroke="rgba(74,158,255,0.07)" stroke-width="0.5"/>
+                <line x1="45" y1="0" x2="45" y2="130" stroke="rgba(74,158,255,0.07)" stroke-width="0.5"/>
+                <line x1="90" y1="0" x2="90" y2="130" stroke="rgba(74,158,255,0.07)" stroke-width="0.5"/>
+                <line x1="135" y1="0" x2="135" y2="130" stroke="rgba(74,158,255,0.07)" stroke-width="0.5"/>
+                <path d="M 18 105 Q 90 18 162 95" stroke="rgba(74,158,255,0.18)" stroke-width="1.5" stroke-dasharray="4,4"/>
+                <path d="M 18 105 Q 58 38 108 58" stroke="url(#s2a)" stroke-width="1.8"/>
+                <defs>
+                  <linearGradient id="s2a" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#4A9EFF"/>
+                    <stop offset="100%" stop-color="#64D2FF"/>
+                  </linearGradient>
+                </defs>
+                <text x="14" y="115" fill="#8E8E93" font-size="7" font-weight="700" font-family="system-ui">JFK</text>
+                <text x="150" y="105" fill="#8E8E93" font-size="7" font-weight="700" font-family="system-ui">LAX</text>
+                <circle cx="108" cy="58" r="5" fill="rgba(74,158,255,0.2)"/>
+                <circle cx="108" cy="58" r="3" fill="#4A9EFF"/>
+                <text x="108" y="61" fill="white" font-size="4.5" text-anchor="middle" dominant-baseline="middle">✈</text>
+              </svg>
+            </div>
+            <!-- Chips -->
+            <div class="fd-chips">
+              <div class="fd-chip">
+                <div class="fd-chip-lbl">ALT</div>
+                <div class="fd-chip-val">35k ft</div>
+              </div>
+              <div class="fd-chip">
+                <div class="fd-chip-lbl">SPEED</div>
+                <div class="fd-chip-val">542 mph</div>
+              </div>
+              <div class="fd-chip">
+                <div class="fd-chip-lbl">ETA</div>
+                <div class="fd-chip-val" style="color:var(--on-time)">1h 42m</div>
+              </div>
+            </div>
+            <!-- Progress -->
+            <div class="fd-progress-wrap">
+              <div class="fd-progress-bar"><div class="fd-progress-fill"></div></div>
+              <div class="fd-progress-labels">
+                <div class="fd-plabel">Dep JFK 08:15</div>
+                <div class="fd-plabel">Arr LAX 11:42</div>
+              </div>
+            </div>
+            <!-- Info rows -->
+            <div class="fd-info-rows">
+              <div class="fd-info-row"><div class="fd-info-key">Terminal</div><div class="fd-info-val">B</div></div>
+              <div class="fd-info-row"><div class="fd-info-key">Gate</div><div class="fd-info-val">B22</div></div>
+              <div class="fd-info-row"><div class="fd-info-key">Baggage</div><div class="fd-info-val">–</div></div>
+              <div class="fd-info-row"><div class="fd-info-key">Delay</div><div class="fd-info-val" style="color:var(--on-time)">+0 min</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Screen 3: Live Activity / Lock Screen -->
+        <div class="mock-phone">
+          <div class="mock-phone-notch"></div>
+          <div class="mock-screen" style="background:linear-gradient(160deg,#0a0a14 0%,#0d1020 100%);">
+            <div style="text-align:center;font-size:0.48rem;color:var(--text-secondary);font-weight:600;margin-bottom:2px">Tuesday, June 17</div>
+            <div style="text-align:center;font-size:1.9rem;font-weight:300;letter-spacing:-0.05em;line-height:1;margin-bottom:8px">9:41</div>
+            <!-- Dynamic Island expanded -->
+            <div class="mock-island">
+              <div class="island-airline-dot">UA</div>
+              <div class="island-content">
+                <div class="island-flight-num">UA 2241 &nbsp;JFK → LAX</div>
+                <div class="island-route" style="display:flex;align-items:center;gap:3px">
+                  <span style="color:var(--accent);font-size:0.5rem">✈</span>
+                  <span>En route</span>
+                </div>
+              </div>
+              <div class="island-time" style="text-align:right">
+                <div>1h 42m</div>
+                <div style="font-size:0.4rem;color:var(--text-secondary);font-weight:500">remaining</div>
+              </div>
+            </div>
+            <!-- Lock screen notification -->
+            <div class="mock-lock-notif">
+              <div class="mln-header">
+                <div class="mln-app-icon">✈</div>
+                <div class="mln-app-name">SkyNav</div>
+                <div class="mln-time">now</div>
+              </div>
+              <div class="mln-title">Now Boarding</div>
+              <div class="mln-body">UA 2241 · Gate B22 · Terminal B · Departs in 12 min</div>
+              <div class="mln-progress"><div class="mln-progress-fill" style="width:72%"></div></div>
+            </div>
+            <!-- Second notification -->
+            <div class="mock-lock-notif">
+              <div class="mln-header">
+                <div class="mln-app-icon">✈</div>
+                <div class="mln-app-name">SkyNav</div>
+                <div class="mln-time">8:40</div>
+              </div>
+              <div class="mln-title">Gate B22 · Boarding Open</div>
+              <div class="mln-body">Zone 1 & 2 boarding now. Have your boarding pass ready.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Screen 4: Trip View -->
+        <div class="mock-phone">
+          <div class="mock-phone-notch"></div>
+          <div class="mock-screen">
+            <div class="mock-header">
+              <span class="mock-title">London Trip</span>
+              <span style="font-size:0.48rem;color:var(--text-secondary);font-weight:600">Jun 17–18</span>
+            </div>
+            <!-- Leg 1 -->
+            <div class="mbp-card mbp-active">
+              <div class="mbp-airline-row">
+                <div class="mbp-logo-wrap">
+                  <div class="mbp-logo" style="background:#1E5ECC">UA</div>
+                  <div><div class="mbp-flight-num">UA 2241</div></div>
+                </div>
+                <div class="mbp-pill mbp-inflight">IN FLIGHT</div>
+              </div>
+              <div class="mbp-route-row">
+                <div><div class="mbp-iata">JFK</div><div class="mbp-city">New York</div></div>
+                <div class="mbp-arc-mid">
+                  <svg viewBox="0 0 60 13" fill="none"><path d="M3 11 Q30 2 57 11" stroke="rgba(74,158,255,0.22)" stroke-width="1" stroke-dasharray="2,2"/><path d="M3 11 Q20 3 38 8" stroke="url(#s4a)" stroke-width="1.2"/><defs><linearGradient id="s4a" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#4A9EFF"/><stop offset="100%" stop-color="#64D2FF"/></linearGradient></defs></svg>
+                  <span class="mbp-plane-sm">✈</span>
+                </div>
+                <div style="text-align:right"><div class="mbp-iata">LAX</div><div class="mbp-city">Los Angeles</div></div>
+              </div>
+              <div class="mbp-progress-track"><div class="mbp-progress-fill" style="width:68%"></div></div>
+            </div>
+            <!-- Layover -->
+            <div class="layover-card">
+              <div class="lc-title">Layover · LAX · 2h 48m</div>
+              <div class="lc-sub">Boarding starts 14:05 · Terminal 6</div>
+            </div>
+            <!-- Leg 2 -->
+            <div class="mbp-card">
+              <div class="mbp-airline-row">
+                <div class="mbp-logo-wrap">
+                  <div class="mbp-logo" style="background:#D6001C">DL</div>
+                  <div><div class="mbp-flight-num">DL 892</div></div>
+                </div>
+                <div class="mbp-pill mbp-scheduled">SCHEDULED</div>
+              </div>
+              <div class="mbp-route-row">
+                <div><div class="mbp-iata">LAX</div></div>
+                <div class="mbp-arc-mid">
+                  <svg viewBox="0 0 60 13" fill="none"><path d="M3 11 Q30 2 57 11" stroke="rgba(74,158,255,0.12)" stroke-width="1" stroke-dasharray="2,2"/></svg>
+                </div>
+                <div style="text-align:right"><div class="mbp-iata">LHR</div></div>
+              </div>
+              <div class="mbp-footer-row">
+                <span class="mbp-detail">Gate 45B</span>
+                <span class="mbp-detail">10h 20m</span>
+              </div>
+              <div style="height:3px"></div>
+            </div>
+            <div class="conn-card">
+              <div class="conn-badge">COMFORTABLE</div>
+              <div class="conn-text">
+                <div class="conn-title">1h 23m at LAX</div>
+                <div class="conn-sub">→ Terminal 6, Gate 45B</div>
+              </div>
+            </div>
+            <div style="font-size:0.36rem;color:var(--text-secondary);text-align:center">Total travel time: 18h 25m</div>
+          </div>
+        </div>
+
+        <!-- Screen 5: Paywall -->
+        <div class="mock-phone">
+          <div class="mock-phone-notch"></div>
+          <div class="mock-screen">
+            <div class="mock-paywall-header">
+              <div class="mph-icon">✈</div>
+              <div class="mph-title">SkyNav Pro</div>
+              <div class="mph-sub">Unlock everything.</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:5px">
+              <div style="font-size:0.42rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px"><span style="color:var(--on-time)">✓</span> Live flight data</div>
+              <div style="font-size:0.42rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px"><span style="color:var(--on-time)">✓</span> Live map</div>
+              <div style="font-size:0.42rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px"><span style="color:var(--on-time)">✓</span> Connection Assistant</div>
+              <div style="font-size:0.42rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px"><span style="color:var(--on-time)">✓</span> Calendar sync</div>
+              <div style="font-size:0.42rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px"><span style="color:var(--on-time)">✓</span> Widgets &amp; Live Activities</div>
+              <div style="font-size:0.42rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px"><span style="color:var(--on-time)">✓</span> TripIt import</div>
+            </div>
+            <div class="mock-plan-card monthly" style="margin-bottom:4px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <div class="mpc-plan">Monthly</div>
+                  <div class="mpc-price"><sup style="font-size:0.48rem">$</sup>4.99<span style="font-size:0.48rem;color:var(--text-secondary)">/mo</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="mock-plan-card annual" style="margin-bottom:6px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <div class="mpc-plan" style="color:var(--gold)">Annual</div>
+                  <div class="mpc-price"><sup style="font-size:0.48rem">$</sup>29.99<span style="font-size:0.48rem;color:var(--text-secondary)">/yr</span></div>
+                </div>
+                <div class="mpc-badge">BEST VALUE</div>
+              </div>
+            </div>
+            <div class="mock-cta-btn">Start 7-Day Free Trial</div>
+            <div style="text-align:center;font-size:0.4rem;color:var(--text-secondary);margin-top:3px">Cancel anytime</div>
+          </div>
+        </div>
+
+        <!-- Dup Screen 1: Home -->
+        <div class="mock-phone">
+          <div class="mock-phone-notch"></div>
+          <div class="mock-screen">
+            <div class="mps-bar">
+              <span>9:41</span>
+              <div class="mps-icons"><span>▐▐▐▐</span><span>WiFi</span><span>🔋</span></div>
+            </div>
+            <div class="mock-header">
+              <span class="mock-title">My Flights</span>
+              <div class="mock-avatar"></div>
+            </div>
+            <div class="mbp-card mbp-active">
+              <div class="mbp-airline-row">
+                <div class="mbp-logo-wrap">
+                  <div class="mbp-logo" style="background:#1E5ECC">UA</div>
+                  <div>
+                    <div class="mbp-airline-name">United Airlines</div>
+                    <div class="mbp-flight-num">UA 2241</div>
+                  </div>
+                </div>
+                <div class="mbp-pill mbp-inflight">IN FLIGHT</div>
+              </div>
+              <div class="mbp-route-row">
+                <div class="mbp-airport">
+                  <div class="mbp-iata">JFK</div>
+                  <div class="mbp-city">New York</div>
+                </div>
+                <div class="mbp-arc-mid">
+                  <svg viewBox="0 0 60 13" fill="none"><path d="M3 11 Q30 2 57 11" stroke="rgba(74,158,255,0.22)" stroke-width="1" stroke-dasharray="2,2"/><path d="M3 11 Q20 3 38 8" stroke="url(#d1a)" stroke-width="1.2"/><defs><linearGradient id="d1a" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#4A9EFF"/><stop offset="100%" stop-color="#64D2FF"/></linearGradient></defs></svg>
+                  <span class="mbp-plane-sm">✈</span>
+                  <div class="mbp-dur">5h 27m</div>
+                </div>
+                <div style="text-align:right">
+                  <div class="mbp-iata">LAX</div>
+                  <div class="mbp-city">Los Angeles</div>
+                </div>
+              </div>
+              <div class="mbp-times-row">
+                <div class="mbp-time">08:15</div>
+                <div class="mbp-time">11:42</div>
+              </div>
+              <div class="mbp-footer-row">
+                <span class="mbp-detail">Gate B22 · Terminal B</span>
+                <span class="mbp-detail">+0 min</span>
+              </div>
+              <div class="mbp-progress-track"><div class="mbp-progress-fill" style="width:68%"></div></div>
+            </div>
+            <div class="mbp-card" style="display:flex;align-items:center;gap:6px;padding:6px 8px;">
+              <div style="width:20px;height:20px;border-radius:5px;background:#D6001C;display:flex;align-items:center;justify-content:center;font-size:0.35rem;font-weight:800;color:#fff;flex-shrink:0">DL</div>
+              <div style="flex:1"><div style="font-size:0.52rem;font-weight:800">LAX → ORD</div><div style="font-size:0.36rem;color:var(--text-secondary)">DL 1829 · 14:45</div></div>
+              <div class="mbp-pill mbp-ontime">ON TIME</div>
+            </div>
+            <div class="mbp-card" style="display:flex;align-items:center;gap:6px;padding:6px 8px;">
+              <div style="width:20px;height:20px;border-radius:5px;background:#C41E3A;display:flex;align-items:center;justify-content:center;font-size:0.35rem;font-weight:800;color:#fff;flex-shrink:0">AA</div>
+              <div style="flex:1"><div style="font-size:0.52rem;font-weight:800">ORD → LHR</div><div style="font-size:0.36rem;color:var(--text-secondary)">AA 445 · 21:30</div></div>
+              <div class="mbp-pill mbp-scheduled">SCHEDULED</div>
+            </div>
+            <div class="mock-tab-bar">
+              <div class="mtb-item"><div class="mtb-icon">🌐</div><div class="mtb-label">Explore</div></div>
+              <div class="mtb-item active"><div class="mtb-icon">✈</div><div class="mtb-label">Flights</div></div>
+              <div class="mtb-item"><div class="mtb-icon">⊞</div><div class="mtb-label">Trips</div></div>
+              <div class="mtb-item"><div class="mtb-icon">⚙</div><div class="mtb-label">Settings</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dup Screen 2: Flight Detail -->
+        <div class="mock-phone">
+          <div class="mock-phone-notch"></div>
+          <div class="mock-screen">
+            <div class="fd-header">
+              <div class="fd-back">‹ Flights</div>
+              <div class="fd-title">UA 2241</div>
+              <div class="mbp-pill mbp-inflight" style="font-size:0.34rem;padding:2px 5px">IN FLIGHT</div>
+            </div>
+            <div style="font-size:0.36rem;color:var(--text-secondary);text-align:center;margin-bottom:2px">United Airlines · Boeing 737-900</div>
+            <div class="mock-map" style="flex:1;min-height:0">
+              <div class="mock-map-grid"></div>
+              <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 180 130" fill="none">
+                <line x1="0" y1="32" x2="180" y2="32" stroke="rgba(74,158,255,0.07)" stroke-width="0.5"/>
+                <line x1="0" y1="65" x2="180" y2="65" stroke="rgba(74,158,255,0.07)" stroke-width="0.5"/>
+                <line x1="0" y1="98" x2="180" y2="98" stroke="rgba(74,158,255,0.07)" stroke-width="0.5"/>
+                <line x1="45" y1="0" x2="45" y2="130" stroke="rgba(74,158,255,0.07)" stroke-width="0.5"/>
+                <line x1="90" y1="0" x2="90" y2="130" stroke="rgba(74,158,255,0.07)" stroke-width="0.5"/>
+                <line x1="135" y1="0" x2="135" y2="130" stroke="rgba(74,158,255,0.07)" stroke-width="0.5"/>
+                <path d="M 18 105 Q 90 18 162 95" stroke="rgba(74,158,255,0.18)" stroke-width="1.5" stroke-dasharray="4,4"/>
+                <path d="M 18 105 Q 58 38 108 58" stroke="url(#d2a)" stroke-width="1.8"/>
+                <defs>
+                  <linearGradient id="d2a" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#4A9EFF"/>
+                    <stop offset="100%" stop-color="#64D2FF"/>
+                  </linearGradient>
+                </defs>
+                <text x="14" y="115" fill="#8E8E93" font-size="7" font-weight="700" font-family="system-ui">JFK</text>
+                <text x="150" y="105" fill="#8E8E93" font-size="7" font-weight="700" font-family="system-ui">LAX</text>
+                <circle cx="108" cy="58" r="5" fill="rgba(74,158,255,0.2)"/>
+                <circle cx="108" cy="58" r="3" fill="#4A9EFF"/>
+                <text x="108" y="61" fill="white" font-size="4.5" text-anchor="middle" dominant-baseline="middle">✈</text>
+              </svg>
+            </div>
+            <div class="fd-chips">
+              <div class="fd-chip"><div class="fd-chip-lbl">ALT</div><div class="fd-chip-val">35k ft</div></div>
+              <div class="fd-chip"><div class="fd-chip-lbl">SPEED</div><div class="fd-chip-val">542 mph</div></div>
+              <div class="fd-chip"><div class="fd-chip-lbl">ETA</div><div class="fd-chip-val" style="color:var(--on-time)">1h 42m</div></div>
+            </div>
+            <div class="fd-progress-wrap">
+              <div class="fd-progress-bar"><div class="fd-progress-fill"></div></div>
+              <div class="fd-progress-labels">
+                <div class="fd-plabel">Dep JFK 08:15</div>
+                <div class="fd-plabel">Arr LAX 11:42</div>
+              </div>
+            </div>
+            <div class="fd-info-rows">
+              <div class="fd-info-row"><div class="fd-info-key">Terminal</div><div class="fd-info-val">B</div></div>
+              <div class="fd-info-row"><div class="fd-info-key">Gate</div><div class="fd-info-val">B22</div></div>
+              <div class="fd-info-row"><div class="fd-info-key">Baggage</div><div class="fd-info-val">–</div></div>
+              <div class="fd-info-row"><div class="fd-info-key">Delay</div><div class="fd-info-val" style="color:var(--on-time)">+0 min</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dup Screen 3: Lock Screen -->
+        <div class="mock-phone">
+          <div class="mock-phone-notch"></div>
+          <div class="mock-screen" style="background:linear-gradient(160deg,#0a0a14 0%,#0d1020 100%);">
+            <div style="text-align:center;font-size:0.48rem;color:var(--text-secondary);font-weight:600;margin-bottom:2px">Tuesday, June 17</div>
+            <div style="text-align:center;font-size:1.9rem;font-weight:300;letter-spacing:-0.05em;line-height:1;margin-bottom:8px">9:41</div>
+            <div class="mock-island">
+              <div class="island-airline-dot">UA</div>
+              <div class="island-content">
+                <div class="island-flight-num">UA 2241 &nbsp;JFK → LAX</div>
+                <div class="island-route" style="display:flex;align-items:center;gap:3px">
+                  <span style="color:var(--accent);font-size:0.5rem">✈</span>
+                  <span>En route</span>
+                </div>
+              </div>
+              <div class="island-time" style="text-align:right">
+                <div>1h 42m</div>
+                <div style="font-size:0.4rem;color:var(--text-secondary);font-weight:500">remaining</div>
+              </div>
+            </div>
+            <div class="mock-lock-notif">
+              <div class="mln-header">
+                <div class="mln-app-icon">✈</div>
+                <div class="mln-app-name">SkyNav</div>
+                <div class="mln-time">now</div>
+              </div>
+              <div class="mln-title">Now Boarding</div>
+              <div class="mln-body">UA 2241 · Gate B22 · Terminal B · Departs in 12 min</div>
+              <div class="mln-progress"><div class="mln-progress-fill" style="width:72%"></div></div>
+            </div>
+            <div class="mock-lock-notif">
+              <div class="mln-header">
+                <div class="mln-app-icon">✈</div>
+                <div class="mln-app-name">SkyNav</div>
+                <div class="mln-time">8:40</div>
+              </div>
+              <div class="mln-title">Gate B22 · Boarding Open</div>
+              <div class="mln-body">Zone 1 &amp; 2 boarding now. Have your boarding pass ready.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dup Screen 4: Trip View -->
+        <div class="mock-phone">
+          <div class="mock-phone-notch"></div>
+          <div class="mock-screen">
+            <div class="mock-header">
+              <span class="mock-title">London Trip</span>
+              <span style="font-size:0.48rem;color:var(--text-secondary);font-weight:600">Jun 17–18</span>
+            </div>
+            <div class="mbp-card mbp-active">
+              <div class="mbp-airline-row">
+                <div class="mbp-logo-wrap">
+                  <div class="mbp-logo" style="background:#1E5ECC">UA</div>
+                  <div><div class="mbp-flight-num">UA 2241</div></div>
+                </div>
+                <div class="mbp-pill mbp-inflight">IN FLIGHT</div>
+              </div>
+              <div class="mbp-route-row">
+                <div><div class="mbp-iata">JFK</div><div class="mbp-city">New York</div></div>
+                <div class="mbp-arc-mid">
+                  <svg viewBox="0 0 60 13" fill="none"><path d="M3 11 Q30 2 57 11" stroke="rgba(74,158,255,0.22)" stroke-width="1" stroke-dasharray="2,2"/><path d="M3 11 Q20 3 38 8" stroke="url(#d4a)" stroke-width="1.2"/><defs><linearGradient id="d4a" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#4A9EFF"/><stop offset="100%" stop-color="#64D2FF"/></linearGradient></defs></svg>
+                  <span class="mbp-plane-sm">✈</span>
+                </div>
+                <div style="text-align:right"><div class="mbp-iata">LAX</div><div class="mbp-city">Los Angeles</div></div>
+              </div>
+              <div class="mbp-progress-track"><div class="mbp-progress-fill" style="width:68%"></div></div>
+            </div>
+            <div class="layover-card">
+              <div class="lc-title">Layover · LAX · 2h 48m</div>
+              <div class="lc-sub">Boarding starts 14:05 · Terminal 6</div>
+            </div>
+            <div class="mbp-card">
+              <div class="mbp-airline-row">
+                <div class="mbp-logo-wrap">
+                  <div class="mbp-logo" style="background:#D6001C">DL</div>
+                  <div><div class="mbp-flight-num">DL 892</div></div>
+                </div>
+                <div class="mbp-pill mbp-scheduled">SCHEDULED</div>
+              </div>
+              <div class="mbp-route-row">
+                <div><div class="mbp-iata">LAX</div></div>
+                <div class="mbp-arc-mid">
+                  <svg viewBox="0 0 60 13" fill="none"><path d="M3 11 Q30 2 57 11" stroke="rgba(74,158,255,0.12)" stroke-width="1" stroke-dasharray="2,2"/></svg>
+                </div>
+                <div style="text-align:right"><div class="mbp-iata">LHR</div></div>
+              </div>
+              <div class="mbp-footer-row">
+                <span class="mbp-detail">Gate 45B</span>
+                <span class="mbp-detail">10h 20m</span>
+              </div>
+              <div style="height:3px"></div>
+            </div>
+            <div class="conn-card">
+              <div class="conn-badge">COMFORTABLE</div>
+              <div class="conn-text">
+                <div class="conn-title">1h 23m at LAX</div>
+                <div class="conn-sub">→ Terminal 6, Gate 45B</div>
+              </div>
+            </div>
+            <div style="font-size:0.36rem;color:var(--text-secondary);text-align:center">Total travel time: 18h 25m</div>
+          </div>
+        </div>
+
+        <!-- Dup Screen 5: Paywall -->
+        <div class="mock-phone">
+          <div class="mock-phone-notch"></div>
+          <div class="mock-screen">
+            <div class="mock-paywall-header">
+              <div class="mph-icon">✈</div>
+              <div class="mph-title">SkyNav Pro</div>
+              <div class="mph-sub">Unlock everything.</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:5px">
+              <div style="font-size:0.42rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px"><span style="color:var(--on-time)">✓</span> Live flight data</div>
+              <div style="font-size:0.42rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px"><span style="color:var(--on-time)">✓</span> Live map</div>
+              <div style="font-size:0.42rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px"><span style="color:var(--on-time)">✓</span> Connection Assistant</div>
+              <div style="font-size:0.42rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px"><span style="color:var(--on-time)">✓</span> Calendar sync</div>
+              <div style="font-size:0.42rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px"><span style="color:var(--on-time)">✓</span> Widgets &amp; Live Activities</div>
+              <div style="font-size:0.42rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px"><span style="color:var(--on-time)">✓</span> TripIt import</div>
+            </div>
+            <div class="mock-plan-card monthly" style="margin-bottom:4px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <div class="mpc-plan">Monthly</div>
+                  <div class="mpc-price"><sup style="font-size:0.48rem">$</sup>4.99<span style="font-size:0.48rem;color:var(--text-secondary)">/mo</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="mock-plan-card annual" style="margin-bottom:6px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <div class="mpc-plan" style="color:var(--gold)">Annual</div>
+                  <div class="mpc-price"><sup style="font-size:0.48rem">$</sup>29.99<span style="font-size:0.48rem;color:var(--text-secondary)">/yr</span></div>
+                </div>
+                <div class="mpc-badge">BEST VALUE</div>
+              </div>
+            </div>
+            <div class="mock-cta-btn">Start 7-Day Free Trial</div>
+            <div style="text-align:center;font-size:0.4rem;color:var(--text-secondary);margin-top:3px">Cancel anytime</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- ─── PRICING ────────────────────────────────────────────────────────── -->
+  <section id="pricing">
+    <div class="section-inner">
+      <div class="section-header" style="text-align:center;">
+        <div class="section-eyebrow reveal">Pricing</div>
+        <h2 class="section-title reveal reveal-delay-1">Simple, honest pricing.</h2>
+        <p class="section-sub reveal reveal-delay-2" style="margin: 0 auto;">Start free, go premium when you're ready. Cancel any time.</p>
+      </div>
+      <div class="pricing-grid">
+        <div class="pricing-card reveal reveal-delay-1">
+          <div class="pricing-plan">Monthly</div>
+          <div class="pricing-amount"><sup>$</sup>4<span style="font-size:2rem">.99</span></div>
+          <div class="pricing-period">per month</div>
+          <div style="height:24px;"></div>
+          <div class="pricing-divider"></div>
+          <ul class="pricing-features">
+            <li>Live flight data</li>
+            <li>All airports worldwide</li>
+            <li>Home screen widgets</li>
+            <li>Live Activities</li>
+            <li>Connection Assistant</li>
+            <li>Calendar sync</li>
+            <li>TripIt import</li>
+            <li>Priority data updates</li>
+          </ul>
+          <button class="btn-trial secondary">Start 7-Day Free Trial</button>
+        </div>
+        <div class="pricing-card featured reveal reveal-delay-2">
+          <div class="pricing-badge">RECOMMENDED</div>
+          <div class="pricing-plan" style="color:var(--gold)">Annual</div>
+          <div class="pricing-amount"><sup>$</sup>29<span style="font-size:2rem">.99</span></div>
+          <div class="pricing-period">per year</div>
+          <div class="pricing-save">Save 50% vs. monthly</div>
+          <div class="pricing-divider" style="border-color: rgba(255,214,10,0.15)"></div>
+          <ul class="pricing-features">
+            <li>Live flight data</li>
+            <li>All airports worldwide</li>
+            <li>Home screen widgets</li>
+            <li>Live Activities</li>
+            <li>Connection Assistant</li>
+            <li>Calendar sync</li>
+            <li>TripIt import</li>
+            <li>Priority data updates</li>
+          </ul>
+          <button class="btn-trial primary">Start 7-Day Free Trial</button>
+        </div>
+      </div>
+      <p class="pricing-note reveal reveal-delay-3">No hidden fees. Cancel anytime. Starts with a 7-day free trial.</p>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ────────────────────────────────────────────────────────── -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="footer-logo">✈ SkyNav</div>
+          <p class="footer-tagline">Your flights, beautifully tracked. Built for travelers who care about the details.</p>
+          <a href="#" class="footer-appstore" style="margin-top:16px;display:inline-flex;">
+            <span style="font-size:1.1rem">&#xf8ff;</span>
+            Download on the App Store
+          </a>
+        </div>
+        <div class="footer-links">
+          <div class="footer-link-group">
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#">Download</a>
+          </div>
+          <div class="footer-link-group">
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Use</a>
+            <a href="#">Support</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copyright">© 2026 SkyNav. All rights reserved.</p>
+        <p class="footer-heart">Made with ♥ for travelers</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    /* ─── Starfield ──────────────────────────────────────────────────────────── */
+    const canvas = document.getElementById('starfield');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    function initStars() {
+      stars = [];
+      const count = Math.floor((canvas.width * canvas.height) / 8000);
+      for (let i = 0; i < count; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          r: Math.random() * 1.2 + 0.2,
+          a: Math.random(),
+          speed: Math.random() * 0.003 + 0.001,
+          twinkle: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    function drawStars(ts) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      stars.forEach(s => {
+        s.twinkle += s.speed;
+        const alpha = 0.3 + 0.5 * Math.sin(s.twinkle);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(drawStars);
+    }
+
+    resizeCanvas(); initStars(); requestAnimationFrame(drawStars);
+    window.addEventListener('resize', () => { resizeCanvas(); initStars(); });
+
+    /* ─── Navbar scroll ──────────────────────────────────────────────────────── */
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 20);
+    });
+
+    /* ─── Hamburger ──────────────────────────────────────────────────────────── */
+    document.getElementById('hamburger').addEventListener('click', () => {
+      document.getElementById('navLinks').classList.toggle('open');
+    });
+
+    /* ─── Scroll reveal ──────────────────────────────────────────────────────── */
+    const revealEls = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+    }, { threshold: 0.15 });
+    revealEls.forEach(el => observer.observe(el));
+
+    /* ─── Particles ──────────────────────────────────────────────────────────── */
+    const container = document.getElementById('particlesContainer');
+    if (container) {
+      for (let i = 0; i < 12; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.cssText = `
+          left: ${Math.random() * 100}%;
+          bottom: ${Math.random() * 20}%;
+          animation-duration: ${4 + Math.random() * 6}s;
+          animation-delay: ${Math.random() * 8}s;
+          width: ${1 + Math.random() * 2}px;
+          height: ${1 + Math.random() * 2}px;
+        `;
+        container.appendChild(p);
+      }
+    }
+  </script>
+</body>
+</html>

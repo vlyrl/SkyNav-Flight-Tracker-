@@ -81,8 +81,8 @@ extension WidgetFlightData {
 
     var statusColor: Color {
         switch statusRaw {
-        case "delayed":           return Color(hex: "#FF9F0A")
-        case "boarding":          return Color(hex: "#30D158")
+        case "delayed":           return Color(hex: "#FFFFFF")
+        case "boarding":          return Color(hex: "#4A9EFF")
         case "inFlight","departed": return Color(hex: "#64D2FF")
         case "cancelled":         return Color(hex: "#FF453A")
         case "arrived","landed":  return Color(hex: "#8E8E93")

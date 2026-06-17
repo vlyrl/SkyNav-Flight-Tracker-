@@ -151,6 +151,7 @@ final class Flight {
     var tripId: UUID?
     var addedAt: Date
     var notificationsEnabled: Bool
+    var calendarEventID: String?
 
     init(
         id: UUID = UUID(),

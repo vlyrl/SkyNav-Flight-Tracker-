@@ -10,6 +10,7 @@ struct FlightSearchView: View {
     @State private var airportQuery: String = ""
     @State private var showConfirmation: Bool = false
     @State private var showAirportNav: Bool = false
+    @State private var showTripItImport: Bool = false
     @State private var confirmationResult: FlightSearchResult?
     @State private var appearAnimated: Bool = false
 
@@ -55,6 +56,16 @@ struct FlightSearchView: View {
                     }
                     .foregroundStyle(SkyNavColor.accent)
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        SkyNavHaptic.light()
+                        showTripItImport = true
+                    } label: {
+                        Label("Import from TripIt", systemImage: "square.and.arrow.down")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(SkyNavColor.accent)
+                    }
+                }
             }
             .sheet(isPresented: $showConfirmation) {
                 if let result = confirmationResult {
@@ -64,10 +75,16 @@ struct FlightSearchView: View {
                     })
                 }
             }
+            .sheet(isPresented: $showTripItImport) {
+                TripItImportView(onAdd: { flight in
+                    viewModel.onFlightAdded(flight)
+                })
+            }
             .navigationDestination(isPresented: $showAirportNav) {
                 AirportView(iataCode: airportQuery.uppercased())
             }
         }
+        .presentationBackground(.ultraThinMaterial)
         .preferredColorScheme(.dark)
         .onAppear { wireViewModelDismiss() }
     }
@@ -182,7 +199,7 @@ struct FlightSearchView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         }
-        .skyNavCard()
+        .modifier(SearchCardModifier())
     }
 
     // MARK: - Search Button
@@ -521,8 +538,23 @@ struct FlightResultCard: View {
             }
         }
         .padding(16)
-        .skyNavCard()
+        .modifier(SearchCardModifier())
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+// MARK: - iOS 26 Glass Modifiers
+
+private struct SearchCardModifier: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+                .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        } else {
+            content
+                .skyNavCard()
+        }
     }
 }
 

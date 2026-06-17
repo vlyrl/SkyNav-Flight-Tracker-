@@ -291,6 +291,10 @@ struct TripTimeline: View {
                             isActive: isActive
                         )
                         .padding(.vertical, 4)
+
+                        // Connection risk analysis
+                        ConnectionAssistantView(arriving: flight, departing: nextFlight)
+                            .padding(.bottom, 4)
                     }
                 }
             }
