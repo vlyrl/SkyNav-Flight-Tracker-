@@ -1088,6 +1088,7 @@
 
     /* ─── Responsive ──────────────────────────────────────────────────────── */
     @media (max-width: 768px) {
+      /* Navbar — hide links, show hamburger with dropdown */
       .nav-links { display: none; }
       .hamburger { display: flex; }
       .nav-links.open {
@@ -1097,21 +1098,76 @@
         top: 64px; left: 0; right: 0;
         background: rgba(10,10,15,0.95);
         backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         padding: 20px;
         gap: 16px;
         border-bottom: 1px solid var(--glass-border);
+        z-index: 99;
       }
+
+      /* Hero padding */
+      #hero { padding: 100px 5% 60px; }
+      .hero-ctas { margin-bottom: 48px; }
+
+      /* Phone mockup */
+      .phone-frame { width: 240px; height: 490px; }
+
+      /* Features — 1 column */
       .features-grid { grid-template-columns: 1fr; }
+
+      /* Pricing — stack vertically */
       .pricing-grid { grid-template-columns: 1fr; }
+      .pricing-card { padding: 28px 24px; }
+
+      /* Footer — stack columns */
       .footer-top { flex-direction: column; }
       .footer-links { gap: 24px; }
-      .pricing-card { padding: 28px 24px; }
-      .phone-frame { width: 240px; height: 490px; }
+
+      /* Section spacing */
+      .section-inner { padding: 60px 5%; }
+
+      /* Touch targets — min 44px height */
+      .btn-appstore,
+      .btn-ghost,
+      .btn-trial { min-height: 44px; }
+      .nav-cta { min-height: 36px; display: inline-flex; align-items: center; }
+
+      /* Typography overflow prevention */
+      body { word-break: break-word; }
+      .section-title,
+      .hero-headline,
+      .feature-title,
+      .pricing-amount { word-break: break-word; }
     }
 
     @media (max-width: 480px) {
-      .hero-ctas { flex-direction: column; align-items: center; }
-      .btn-appstore, .btn-ghost { width: 100%; max-width: 300px; justify-content: center; }
+      /* Hero — tighter padding and scaled-down fonts */
+      #hero { padding: 80px 5% 40px; }
+      .hero-headline { font-size: clamp(1.9rem, 8vw, 2.8rem); }
+      .hero-sub { font-size: 0.92rem; }
+      .hero-ctas {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        margin-bottom: 36px;
+      }
+      .btn-appstore,
+      .btn-ghost {
+        width: 100%;
+        justify-content: center;
+        min-height: 48px;
+      }
+
+      /* Phone mockup — scale down to fit narrow screens */
+      .phone-wrapper { max-width: 260px; margin: 0 auto; }
+      .phone-frame { width: 220px; height: 455px; }
+
+      /* Carousel phones — smaller on mobile */
+      .mock-phone { width: 170px; height: 357px; }
+
+      /* Section spacing */
+      .section-inner { padding: 48px 5%; }
+      .section-title { font-size: clamp(1.6rem, 6vw, 2rem); }
     }
 
     /* ─── Boarding Pass Cards (Hero Phone) ─────────────────────────────────── */
